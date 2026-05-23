@@ -10,7 +10,7 @@ void main() {
     test('bg is #050505', () => expect(kc.bg, const Color(0xFF050505)));
     test('bg2 is #161616 solid', () => expect(kc.bg2, const Color(0xFF161616)));
     test('bg3 is #1C1C1C solid', () => expect(kc.bg3, const Color(0xFF1C1C1C)));
-    test('line is rgba(255,255,255,0.06)', () => expect(kc.line, const Color(0x0FFFFFFF)));
+    test('line is rgba(255,255,255,0.15)', () => expect(kc.line, const Color(0x26FFFFFF)));
     test('line2 is rgba(255,255,255,0.10)', () => expect(kc.line2, const Color(0x1AFFFFFF)));
     test('accent is #FB923C orange', () => expect(kc.accent, const Color(0xFFFB923C)));
     test('glowCool is rgba(160,185,210,0.5)', () => expect(kc.glowCool, const Color(0x80A0B9D2)));

@@ -1,7 +1,7 @@
 name: kairos
-description: KAIROS 2.0 — AI-powered productivity app with offline-first Realm storage
+description: KAIROS 3.0 — AI-powered productivity app with offline-first Realm storage and Supabase sync
 publish_to: 'none'
-version: 2.0.0+1
+version: 3.0.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

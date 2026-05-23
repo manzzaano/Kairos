@@ -24,11 +24,11 @@ void setupServiceLocator() {
     SupabaseSyncService(supabase: supabaseClient),
   );
 
-  // Realm — delete DB on schema mismatch (dev mode, no user data yet)
+  // Realm — schema v1. En producción no borra datos en migración.
   final config = Configuration.local(
     [TaskObject.schema],
     schemaVersion: 1,
-    shouldDeleteIfMigrationNeeded: true,
+    shouldDeleteIfMigrationNeeded: false,
   );
   final realm = Realm(config);
   getIt.registerSingleton<Realm>(realm);

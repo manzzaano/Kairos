@@ -63,8 +63,27 @@ class _DashboardPageState extends State<DashboardPage> {
                   }
                   if (state is TaskError) {
                     return Center(
-                        child: Text(state.message,
-                            style: TextStyle(color: kc.danger)));
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline, color: kc.danger, size: 40),
+                            const SizedBox(height: 12),
+                            Text(state.message,
+                                textAlign: TextAlign.center,
+                                style: AppTypography.body13.copyWith(color: kc.text2)),
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => context.read<TaskBloc>()
+                                  .add(const LoadTasksRequested()),
+                              child: Text('Reintentar',
+                                  style: AppTypography.body13.copyWith(color: kc.accent)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
 
                   final tasks =

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -13,6 +14,15 @@ import '../../../sync/presentation/widgets/conflict_sheet.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  String _initials(String? email) {
+    if (email == null || email.isEmpty) return '?';
+    final parts = email.split('@').first.split('.');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return email.substring(0, email.length >= 2 ? 2 : 1).toUpperCase();
+  }
 
   static const _accentOptions = [
     Color(0xFFFB923C),
@@ -30,6 +40,9 @@ class ProfilePage extends StatelessWidget {
     final kc = context.kc;
     final themeState = context.watch<ThemeCubit>().state;
     final isDark = themeState.mode == ThemeMode.dark;
+    final user = Supabase.instance.client.auth.currentUser;
+    final userEmail = user?.email;
+    final isGuest = user == null;
 
     return Scaffold(
       backgroundColor: kc.bg,
@@ -54,34 +67,63 @@ class ProfilePage extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFB923C), Color(0xFFC2410C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: isGuest
+                          ? const LinearGradient(
+                              colors: [Color(0xFF6B7280), Color(0xFF374151)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFFB923C), Color(0xFFC2410C)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Center(
-                      child: Text('IM',
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A0A00))),
+                    child: Center(
+                      child: Text(
+                        isGuest ? '?' : _initials(userEmail),
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A0A00)),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Ismael Manzano',
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isGuest ? 'Modo invitado' : (userEmail ?? 'Usuario'),
                           style: GoogleFonts.inter(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 2),
-                      Text('ismael@email.com',
-                          style: AppTypography.mono11
-                              .copyWith(color: kc.text3)),
-                    ],
+                              fontSize: 15, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isGuest ? 'Sin sincronización en la nube' : 'Cuenta sincronizada',
+                          style: AppTypography.mono11.copyWith(
+                              color: isGuest ? kc.warning : kc.success),
+                        ),
+                      ],
+                    ),
                   ),
+                  if (isGuest)
+                    GestureDetector(
+                      onTap: () => context.push('/login'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: kc.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('Entrar',
+                            style: AppTypography.caption12.copyWith(
+                                color: kc.accent, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -111,9 +153,7 @@ class ProfilePage extends StatelessWidget {
                   _SyncActionRow(
                     icon: Icons.warning_amber_outlined,
                     label: 'Conflictos de versión',
-                    trailing: Text('1 PENDIENTE',
-                        style: AppTypography.mono11
-                            .copyWith(color: kc.warning)),
+                    trailing: null,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -268,29 +308,48 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  context.go('/login');
-                },
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text('Cerrar sesión'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kc.danger,
-                  side: BorderSide(color: kc.line),
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppShapes.btnRadius)),
+            if (!isGuest)
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (context.mounted) context.go('/login');
+                  },
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Cerrar sesión'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kc.danger,
+                    side: BorderSide(color: kc.line),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppShapes.btnRadius)),
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/login'),
+                  icon: const Icon(Icons.login, size: 18),
+                  label: const Text('Iniciar sesión'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kc.accent,
+                    foregroundColor: const Color(0xFF1A0A00),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppShapes.btnRadius)),
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 24),
 
             Center(
               child: Text(
-                'KAIROS 2.0.1 · BUILD 2026.04.27 · IML',
+                'KAIROS 3.0.0 · BUILD 2026.05.23 · IML',
                 style: GoogleFonts.jetBrainsMono(
                     fontSize: 10, color: kc.text4),
               ),
