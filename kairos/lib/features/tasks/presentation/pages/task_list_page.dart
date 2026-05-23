@@ -114,10 +114,35 @@ class _TaskListPageState extends State<TaskListPage> {
                                 color: kc.accent)))
                   else if (tasks.isEmpty)
                     Expanded(
-                        child: Center(
-                            child: Text('Sin tareas',
-                                style: AppTypography.body13
-                                    .copyWith(color: kc.text3))))
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_outline,
+                                  color: kc.text3, size: 48),
+                              const SizedBox(height: 16),
+                              Text(
+                                _filter == _Filter.all
+                                    ? 'Crea tu primera tarea'
+                                    : 'No hay tareas en esta categoría',
+                                style: AppTypography.body14
+                                    .copyWith(color: kc.text2),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _filter == _Filter.all
+                                    ? 'Toca + para empezar'
+                                    : 'Cambia el filtro para ver otras',
+                                style: AppTypography.caption12
+                                    .copyWith(color: kc.text3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
                   else
                     Expanded(
                       child: _GroupedTaskList(tasks: tasks),

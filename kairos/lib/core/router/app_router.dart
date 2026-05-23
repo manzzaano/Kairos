@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/tasks/presentation/pages/task_list_page.dart';
 import '../../features/tasks/presentation/pages/task_detail_page.dart';
@@ -13,9 +15,31 @@ import '../../features/onboarding/presentation/pages/login_page.dart';
 import '../../features/optimize/presentation/pages/optimize_page.dart';
 import '../../features/app/presentation/pages/app_shell.dart';
 
+/// Notifica al router cuando cambia el estado de auth de Supabase.
+class _SupabaseAuthNotifier extends ChangeNotifier {
+  _SupabaseAuthNotifier() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      notifyListeners();
+    });
+  }
+}
+
 class AppRouter {
+  static final _authNotifier = _SupabaseAuthNotifier();
+
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
+    refreshListenable: _authNotifier,
+    redirect: (context, state) {
+      final user = Supabase.instance.client.auth.currentUser;
+      final loc = state.matchedLocation;
+
+      // Si ya está autenticado y está en /login, llevar al dashboard
+      if (user != null && loc == '/login') return '/dashboard';
+
+      // No bloqueamos rutas principales — la app funciona en modo offline/guest
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -31,21 +55,43 @@ class AppRouter {
       ),
       GoRoute(
         path: '/create-task',
-        builder: (_, __) => const CreateTaskPage(),
+        pageBuilder: (_, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CreateTaskPage(),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 200),
+        ),
       ),
       GoRoute(
         path: '/task/:id',
-        builder: (_, state) =>
-            TaskDetailPage(taskId: state.pathParameters['id']!),
+        pageBuilder: (_, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: TaskDetailPage(taskId: state.pathParameters['id']!),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 200),
+        ),
       ),
       GoRoute(
         path: '/focus/timer',
-        builder: (_, state) =>
-            FocusTimerPage(taskId: state.uri.queryParameters['taskId']),
+        pageBuilder: (_, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: FocusTimerPage(taskId: state.uri.queryParameters['taskId']),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 200),
+        ),
       ),
       GoRoute(
         path: '/optimize',
-        builder: (_, __) => const OptimizePage(),
+        pageBuilder: (_, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const OptimizePage(),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 250),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => AppShell(navigationShell: shell),
@@ -56,20 +102,16 @@ class AppRouter {
                 builder: (_, __) => const DashboardPage()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-                path: '/tasks', builder: (_, __) => const TaskListPage()),
+            GoRoute(path: '/tasks', builder: (_, __) => const TaskListPage()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-                path: '/focus', builder: (_, __) => const FocusPage()),
+            GoRoute(path: '/focus', builder: (_, __) => const FocusPage()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-                path: '/stats', builder: (_, __) => const StatsPage()),
+            GoRoute(path: '/stats', builder: (_, __) => const StatsPage()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-                path: '/profile', builder: (_, __) => const ProfilePage()),
+            GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
           ]),
         ],
       ),

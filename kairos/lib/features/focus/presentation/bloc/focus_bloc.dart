@@ -39,8 +39,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     final current = state;
     final round = (current is FocusRunning) ? current.round
         : (current is FocusPaused) ? current.round : _currentRound;
-    final task = current is FocusRunning ? (current as FocusRunning).task
-        : current is FocusPaused ? (current as FocusPaused).task : null;
+    final task = current is FocusRunning ? current.task
+        : current is FocusPaused ? current.task : null;
     _startTimer();
     emit(FocusRunning(secondsLeft: pomodoroSeconds, task: task, round: round));
   }

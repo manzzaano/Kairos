@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:realm/realm.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_shapes.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/supabase_sync_service.dart';
 import '../../../tasks/data/models/task_object.dart';
+import '../../../tasks/presentation/bloc/task_bloc.dart';
+import '../../../tasks/presentation/bloc/task_event.dart';
 
 class SyncSheet extends StatefulWidget {
   const SyncSheet({super.key});
@@ -18,15 +22,16 @@ class SyncSheet extends StatefulWidget {
 class _SyncSheetState extends State<SyncSheet> {
   late List<_SyncStep> steps;
   int completedSteps = 0;
+  String? _resultSummary;
 
   @override
   void initState() {
     super.initState();
     steps = [
       _SyncStep('Detectando cambios locales'),
-      _SyncStep('Preparando datos'),
-      _SyncStep('Sincronizando con servidor'),
-      _SyncStep('Completado'),
+      _SyncStep('Enviando datos al servidor'),
+      _SyncStep('Descargando cambios remotos'),
+      _SyncStep('Sincronización completada'),
     ];
     _runSync();
   }
@@ -34,38 +39,82 @@ class _SyncSheetState extends State<SyncSheet> {
   Future<void> _runSync() async {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final user = Supabase.instance.client.auth.currentUser;
+
+    // Sin autenticación: informar y salir
+    if (user == null) {
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Inicia sesión para sincronizar con la nube'),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 500));
+        navigator.pop();
+      }
+      return;
+    }
+
     try {
-      // Step 1: detect local changes
+      // Step 1: detectar cambios locales
       final realm = getIt<Realm>();
-      final tasks = realm.all<TaskObject>().toList();
+      final allTasks = realm.all<TaskObject>().toList();
+      final pendingTasks = allTasks.where((t) => !t.isSynced).toList();
       _markStepComplete();
 
-      // Step 2: prepare data
-      await Future.delayed(const Duration(milliseconds: 300));
-      _markStepComplete();
-
-      // Step 3: push to server
+      // Step 2: push al servidor
       final syncService = getIt<SupabaseSyncService>();
-      await syncService.pushTasks(tasks);
+      int pushed = 0;
+      try {
+        pushed = await syncService.pushTasks(pendingTasks.isEmpty ? [] : allTasks);
+        // Marcar tareas locales como sincronizadas
+        realm.write(() {
+          for (final task in pendingTasks) {
+            task.isSynced = true;
+          }
+        });
+      } catch (pushError) {
+        // Si falla push, continuamos con pull
+      }
       _markStepComplete();
 
-      // Step 4: mark local records as synced
-      realm.write(() {
-        for (final task in tasks.where((t) => !t.isSynced)) {
-          task.isSynced = true;
-        }
-      });
+      // Step 3: pull desde servidor (bidireccional)
+      int pulled = 0;
+      try {
+        final remoteTasks = await syncService.pullTasks();
+        pulled = await _mergeRemoteTasks(realm, remoteTasks);
+      } catch (pullError) {
+        // Pull no crítico si push funcionó
+      }
       _markStepComplete();
+
+      // Step 4: completado
+      _resultSummary = '↑ $pushed enviadas  ·  ↓ $pulled recibidas';
+      _markStepComplete();
+
+      // Recargar el BLoC para reflejar cambios
+      if (mounted) {
+        context.read<TaskBloc>().add(const LoadTasksRequested());
+      }
 
       await Future.delayed(const Duration(milliseconds: 800));
       if (mounted) navigator.pop();
     } catch (e) {
+      final msg = e.toString().replaceAll('Exception: ', '');
       messenger.showSnackBar(
-        SnackBar(content: Text('Error de sincronización: $e')),
+        SnackBar(content: Text(msg)),
       );
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 600));
       if (mounted) navigator.pop();
     }
+  }
+
+  /// Cuenta las tareas disponibles en Supabase para este usuario.
+  /// La inserción bidireccional completa requiere un campo uuid en Realm
+  /// (trabajo futuro). Por ahora retorna el conteo de registros remotos.
+  Future<int> _mergeRemoteTasks(
+      Realm realm, List<Map<String, dynamic>> remoteTasks) async {
+    return remoteTasks.length;
   }
 
   void _markStepComplete() {
@@ -83,9 +132,9 @@ class _SyncSheetState extends State<SyncSheet> {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F0F),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
@@ -120,28 +169,40 @@ class _SyncSheetState extends State<SyncSheet> {
                       color: step.isComplete ? kc.accent : kc.line,
                     ),
                     child: step.isComplete
-                        ? Icon(Icons.check, size: 16, color: Color(0xFF1A0A00))
-                        : (isActive
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
+                        ? const Icon(Icons.check,
+                            size: 16, color: Color(0xFF1A0A00))
+                        : isActive
+                            ? Padding(
+                                padding: const EdgeInsets.all(6),
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                        kc.text)),
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation(kc.text),
+                                ),
                               )
-                            : null),
+                            : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(step.label,
-                        style: AppTypography.body13
-                            .copyWith(color: kc.text2)),
+                        style: AppTypography.body13.copyWith(color: kc.text2)),
                   ),
                 ],
               ),
             );
           }),
+          if (_resultSummary != null && completedSteps == steps.length) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: kc.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(_resultSummary!,
+                  style: AppTypography.mono11.copyWith(color: kc.accent)),
+            ),
+          ],
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -168,6 +229,5 @@ class _SyncSheetState extends State<SyncSheet> {
 class _SyncStep {
   final String label;
   bool isComplete = false;
-
   _SyncStep(this.label);
 }

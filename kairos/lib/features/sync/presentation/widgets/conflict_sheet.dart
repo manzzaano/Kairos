@@ -40,7 +40,7 @@ class ConflictSheet extends StatelessWidget {
                 Icon(Icons.warning_amber_outlined, color: kc.warning, size: 24),
           ),
           const SizedBox(height: 12),
-          Text('Conflicto de versin',
+          Text('Conflicto de versión',
               style: GoogleFonts.inter(
                   fontSize: 18, fontWeight: FontWeight.w600, color: kc.text)),
           const SizedBox(height: 8),
@@ -127,7 +127,7 @@ class ConflictSheet extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppShapes.btnRadius)),
               ),
-              child: const Text('Ms tarde'),
+              child: const Text('Más tarde'),
             ),
           ),
         ],

@@ -41,7 +41,7 @@ class KairosColors extends ThemeExtension<KairosColors> {
   });
 
   factory KairosColors.dark(Color accent) => KairosColors(
-        accent: const Color(0xFFF0E6D7),     // warm ivory (diseño_nuevo)
+        accent: accent,                       // color de acento seleccionado por el usuario
         accent2: const Color(0xFFFDBA74),    // #fdba74
         accentSoft: const Color(0x26F0E6D7), // rgba(240,230,215,0.15)
         bg: const Color(0xFF050505),         // #050505 (diseño_nuevo)
