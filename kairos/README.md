@@ -53,11 +53,22 @@ lib/
 
 ---
 
+## Plataformas
+
+| Plataforma | Estado | Notas |
+|------------|--------|-------|
+| **Android** | ✅ Soportada | APKs arm64, arm32, x86_64 disponibles |
+| **iOS** | 🔧 Futura | Requiere macOS + Xcode + Apple Developer Account |
+
+> El desarrollo y testing se realizó en **Windows 11** con emulador Android (API 36, Medium Phone). La compilación para iOS requiere macOS y no es posible en entornos Windows.
+
+---
+
 ## Requisitos previos
 
 - Flutter SDK `>=3.3.0 <4.0.0`
 - Android Studio / VS Code con extensión Flutter
-- Emulador Android (recomendado: Medium Phone API 35) o dispositivo físico
+- Emulador Android (recomendado: Medium Phone API 36) o dispositivo físico Android
 
 ---
 
