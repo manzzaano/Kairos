@@ -26,11 +26,11 @@ void setupServiceLocator() {
   );
 
   // Realm — schema v2 (añade subtasks + subtasksDone).
-  // shouldDeleteIfMigrationNeeded: true para migración automática durante desarrollo.
+  // shouldDeleteIfMigrationNeeded: false en producción — no borrar datos del usuario.
   final config = Configuration.local(
     [TaskObject.schema],
     schemaVersion: 2,
-    shouldDeleteIfMigrationNeeded: true,
+    shouldDeleteIfMigrationNeeded: false,
   );
   final realm = Realm(config);
   getIt.registerSingleton<Realm>(realm);

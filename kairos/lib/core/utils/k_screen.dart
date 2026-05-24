@@ -54,4 +54,13 @@ abstract final class KScreen {
   /// Padding superior para contenido bajo la status bar.
   static double topPad(BuildContext ctx) =>
       MediaQuery.paddingOf(ctx).top + 56;
+
+  // ── Bottom padding ───────────────────────────────────────────────────────
+  /// Altura del navbar flotante de KAIROS (aprox.).
+  static const double _kNavBarHeight = 88.0;
+
+  /// Padding inferior para contenido bajo navbar flotante + system nav bar.
+  /// Evita que el contenido quede tapado por la barra de gestos Android.
+  static double bottomPad(BuildContext ctx) =>
+      MediaQuery.paddingOf(ctx).bottom + _kNavBarHeight + 16;
 }

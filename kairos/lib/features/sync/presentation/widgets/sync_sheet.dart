@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:realm/realm.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -41,7 +42,7 @@ class _SyncSheetState extends State<SyncSheet> {
     final messenger = ScaffoldMessenger.of(context);
     final user = Supabase.instance.client.auth.currentUser;
 
-    // Sin autenticación: informar y salir
+    // Sin autenticación → informar y salir
     if (user == null) {
       if (mounted) {
         messenger.showSnackBar(
@@ -62,19 +63,22 @@ class _SyncSheetState extends State<SyncSheet> {
       final pendingTasks = allTasks.where((t) => !t.isSynced).toList();
       _markStepComplete();
 
-      // Step 2: push al servidor
+      // Step 2: push solo las tareas sin sincronizar
       final syncService = getIt<SupabaseSyncService>();
       int pushed = 0;
       try {
-        pushed = await syncService.pushTasks(pendingTasks.isEmpty ? [] : allTasks);
-        // Marcar tareas locales como sincronizadas
-        realm.write(() {
-          for (final task in pendingTasks) {
-            task.isSynced = true;
-          }
-        });
+        if (pendingTasks.isNotEmpty) {
+          pushed = await syncService.pushTasks(pendingTasks);
+          // Marcar como sincronizadas SOLO si el push fue exitoso
+          realm.write(() {
+            for (final task in pendingTasks) {
+              task.isSynced = true;
+            }
+          });
+        }
       } catch (pushError) {
-        // Si falla push, continuamos con pull
+        // Push falla → continuamos con pull para no bloquear sync
+        debugPrint('[Sync] Push error: $pushError');
       }
       _markStepComplete();
 
@@ -84,15 +88,18 @@ class _SyncSheetState extends State<SyncSheet> {
         final remoteTasks = await syncService.pullTasks();
         pulled = await _mergeRemoteTasks(realm, remoteTasks);
       } catch (pullError) {
-        // Pull no crítico si push funcionó
+        debugPrint('[Sync] Pull error: $pullError');
       }
       _markStepComplete();
 
-      // Step 4: completado
+      // Step 4: completado — guardar timestamp de última sync
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_sync_ts', DateTime.now().toIso8601String());
+
       _resultSummary = '↑ $pushed enviadas  ·  ↓ $pulled recibidas';
       _markStepComplete();
 
-      // Recargar el BLoC para reflejar cambios
+      // Recargar BLoC para reflejar cambios en UI
       if (mounted) {
         context.read<TaskBloc>().add(const LoadTasksRequested());
       }
@@ -101,21 +108,69 @@ class _SyncSheetState extends State<SyncSheet> {
       if (mounted) navigator.pop();
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      messenger.showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (mounted) navigator.pop();
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(msg)));
+        await Future.delayed(const Duration(milliseconds: 600));
+        navigator.pop();
+      }
     }
   }
 
-  /// Cuenta las tareas disponibles en Supabase para este usuario.
-  /// La inserción bidireccional completa requiere un campo uuid en Realm
-  /// (trabajo futuro). Por ahora retorna el conteo de registros remotos.
+  /// Merge bidireccional: inserta en Realm las tareas remotas que no existen localmente.
+  /// Estrategia: local wins — si la tarea ya existe en Realm, se mantiene la versión local.
+  /// Las tareas nuevas del servidor se añaden con isSynced = true.
   Future<int> _mergeRemoteTasks(
       Realm realm, List<Map<String, dynamic>> remoteTasks) async {
-    return remoteTasks.length;
+    if (remoteTasks.isEmpty) return 0;
+
+    // Conjunto de IDs locales (ObjectId → hex string)
+    final localIds =
+        realm.all<TaskObject>().map((t) => t.id.hexString).toSet();
+
+    int merged = 0;
+    realm.write(() {
+      for (final remote in remoteTasks) {
+        final remoteIdStr = remote['id'] as String?;
+        if (remoteIdStr == null) continue;
+
+        // Si ya existe localmente → skip (local wins)
+        if (localIds.contains(remoteIdStr)) continue;
+
+        // Tarea nueva del servidor → insertar en Realm
+        try {
+          final objectId = ObjectId.fromHexString(remoteIdStr);
+          final priorityInt = remote['priority'] as int? ?? 2;
+          final obj = TaskObject(
+            objectId,
+            remote['title'] as String? ?? 'Sin título',
+            _intToPriority(priorityInt),
+            remote['energy'] as int? ?? 2,
+            remote['estimated_minutes'] as int? ?? 25,
+            remote['completed'] as bool? ?? false,
+            true, // isSynced — viene del servidor
+            '',   // project — no sincronizado aún
+          );
+          obj.description = remote['description'] as String?;
+          obj.completedAt = remote['completed_at'] != null
+              ? DateTime.tryParse(remote['completed_at'] as String)
+              : null;
+          obj.createdAt = remote['created_at'] != null
+              ? DateTime.tryParse(remote['created_at'] as String)
+              : DateTime.now();
+          realm.add(obj);
+          merged++;
+        } catch (e) {
+          // ID inválido o campo faltante → skip silencioso
+          debugPrint('[Sync] Merge error para id $remoteIdStr: $e');
+        }
+      }
+    });
+    return merged;
   }
+
+  /// Convierte prioridad int (Supabase) → String (Realm).
+  static String _intToPriority(int p) =>
+      p >= 3 ? 'high' : p == 2 ? 'medium' : 'low';
 
   void _markStepComplete() {
     if (mounted) {
@@ -149,9 +204,11 @@ class _SyncSheetState extends State<SyncSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Sincronizando datos',
-              style: GoogleFonts.inter(
-                  fontSize: 18, fontWeight: FontWeight.w600, color: kc.text)),
+          Text(
+            'Sincronizando datos',
+            style: GoogleFonts.inter(
+                fontSize: 18, fontWeight: FontWeight.w600, color: kc.text),
+          ),
           const SizedBox(height: 24),
           ...steps.asMap().entries.map((e) {
             final idx = e.key;
@@ -184,8 +241,10 @@ class _SyncSheetState extends State<SyncSheet> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(step.label,
-                        style: AppTypography.body13.copyWith(color: kc.text2)),
+                    child: Text(
+                      step.label,
+                      style: AppTypography.body13.copyWith(color: kc.text2),
+                    ),
                   ),
                 ],
               ),
@@ -199,8 +258,10 @@ class _SyncSheetState extends State<SyncSheet> {
                 color: kc.accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(_resultSummary!,
-                  style: AppTypography.mono11.copyWith(color: kc.accent)),
+              child: Text(
+                _resultSummary!,
+                style: AppTypography.mono11.copyWith(color: kc.accent),
+              ),
             ),
           ],
           const SizedBox(height: 20),

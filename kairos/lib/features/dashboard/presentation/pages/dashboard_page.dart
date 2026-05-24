@@ -372,14 +372,14 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
 
-                      const SliverToBoxAdapter(
-                          child: SizedBox(height: 160)),
+                      SliverToBoxAdapter(
+                          child: SizedBox(height: KScreen.bottomPad(context))),
                     ],
                   );
                 },
               ),
           Positioned(
-            bottom: 100,
+            bottom: KScreen.bottomPad(context) - 40,
             right: 20,
             child: FABKairos(
               onPressed: () => context.push('/create-task'),

@@ -6,6 +6,7 @@ import '../../domain/habit.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/k_screen.dart';
 
 class HabitsPage extends StatefulWidget {
   const HabitsPage({super.key});
@@ -97,7 +98,7 @@ class _HabitsPageState extends State<HabitsPage> {
     final total = _habits.length;
 
     return Scaffold(
-      backgroundColor: kc.bg,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,8 +176,9 @@ class _HabitsPageState extends State<HabitsPage> {
                   : _habits.isEmpty
                       ? _EmptyState(onAdd: _showAddHabitSheet)
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xl),
+                          padding: EdgeInsets.fromLTRB(
+                              AppSpacing.xl, 0,
+                              AppSpacing.xl, KScreen.bottomPad(context)),
                           itemCount: _habits.length,
                           itemBuilder: (ctx, i) => _HabitCard(
                             key: ValueKey(_habits[i].id),

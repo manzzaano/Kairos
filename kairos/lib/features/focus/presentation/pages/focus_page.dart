@@ -45,7 +45,7 @@ class _FocusPageState extends State<FocusPage> {
           return SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 KScreen.hPad(context), KScreen.topPad(context),
-                KScreen.hPad(context), AppSpacing.md),
+                KScreen.hPad(context), KScreen.bottomPad(context)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

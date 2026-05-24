@@ -418,7 +418,7 @@ class _TaskListPageState extends State<TaskListPage> {
             },
           ),
           Positioned(
-            bottom: 100,
+            bottom: KScreen.bottomPad(context) - 40,
             right: 20,
             child: FABKairos(
               onPressed: () => context.push('/create-task'),
@@ -444,7 +444,8 @@ class _GroupedTaskList extends StatelessWidget {
     }
 
     return ListView(
-      padding: EdgeInsets.symmetric(horizontal: KScreen.hPad(context)),
+      padding: EdgeInsets.fromLTRB(KScreen.hPad(context), 0,
+          KScreen.hPad(context), KScreen.bottomPad(context)),
       children: [
         for (final entry in groups.entries) ...[
           Padding(

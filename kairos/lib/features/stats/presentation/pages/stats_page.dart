@@ -233,7 +233,7 @@ class _StatsBody extends StatelessWidget {
                   _InsightCard(
                       text:
                           'Crea tu primera tarea para ver estadísticas reales.'),
-                const SizedBox(height: 80),
+                SizedBox(height: KScreen.bottomPad(context)),
               ],
             ),
           );
