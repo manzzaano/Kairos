@@ -208,7 +208,11 @@ class ProfilePage extends StatelessWidget {
                           value: isDark,
                           onChanged: (_) =>
                               context.read<ThemeCubit>().toggleMode(),
-                          activeThumbColor: kc.accent,
+                          thumbColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? kc.accent
+                                : null,
+                          ),
                         ),
                       ],
                     ),
