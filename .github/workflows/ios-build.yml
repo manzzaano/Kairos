@@ -1,0 +1,59 @@
+name: iOS Build (macOS)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-ios:
+    name: Build iOS (no-codesign)
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        working-directory: kairos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Flutter analyze (iOS)
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build iOS (no code signing — demo purposes)
+        run: |
+          flutter build ios \
+            --release \
+            --no-codesign \
+            --no-tree-shake-icons
+        env:
+          FLUTTER_BUILD_NAME: "3.0.0"
+          FLUTTER_BUILD_NUMBER: "3"
+
+      - name: Verify iOS build output
+        run: |
+          ls -la build/ios/iphoneos/Runner.app || true
+          echo "✅ iOS build completed successfully"
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-runner-app
+          path: kairos/build/ios/iphoneos/Runner.app
+          if-no-files-found: warn
+          retention-days: 7

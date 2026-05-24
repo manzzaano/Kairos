@@ -18,7 +18,7 @@ class EnergyDots extends StatelessWidget {
           margin: const EdgeInsets.only(right: 2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: i < level ? kc.accent : const Color(0x1AFFFFFF),
+            color: i < level ? kc.accent : kc.line2,
           ),
         ),
       ),
