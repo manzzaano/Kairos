@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../shared/widgets/kairos_icons.dart';
+import '../../../../shared/widgets/kairos_background.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 
 class AppShell extends StatelessWidget {
@@ -12,20 +13,21 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final kc = context.kc;
     return Scaffold(
-      extendBody: false,
-      backgroundColor: kc.bg,
-      body: Stack(
-        children: [
-          navigationShell,
-          const Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(child: OfflineBanner()),
-          ),
-        ],
+      extendBody: true,
+      backgroundColor: Colors.transparent,
+      body: KairosBackground(
+        child: Stack(
+          children: [
+            navigationShell,
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(child: OfflineBanner()),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _KairosTabBar(
         currentIndex: navigationShell.currentIndex,

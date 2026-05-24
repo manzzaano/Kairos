@@ -12,6 +12,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_shapes.dart';
 import '../../../../shared/widgets/fab_kairos.dart';
 import '../../../../shared/widgets/task_card.dart';
+import '../../../../core/utils/k_screen.dart';
 
 enum _Filter { all, today, pending, done, high }
 
@@ -160,7 +161,7 @@ class _TaskListPageState extends State<TaskListPage> {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return Scaffold(
-      backgroundColor: kc.bg,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           BlocBuilder<TaskBloc, TaskState>(
@@ -175,8 +176,9 @@ class _TaskListPageState extends State<TaskListPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xl, 64, AppSpacing.xl, 0),
+                    padding: EdgeInsets.fromLTRB(
+                        KScreen.hPad(context), KScreen.topPad(context),
+                        KScreen.hPad(context), 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -442,8 +444,7 @@ class _GroupedTaskList extends StatelessWidget {
     }
 
     return ListView(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: KScreen.hPad(context)),
       children: [
         for (final entry in groups.entries) ...[
           Padding(

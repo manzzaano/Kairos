@@ -7,6 +7,7 @@ import '../../../habits/presentation/pages/habits_page.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/k_screen.dart';
 
 /// Wrapper que contiene Stats y Hábitos en dos pestañas.
 class StatsPage extends StatelessWidget {
@@ -18,7 +19,7 @@ class StatsPage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: kc.bg,
+        backgroundColor: Colors.transparent,
         body: Column(
           children: [
             SizedBox(height: MediaQuery.of(context).padding.top + 52),
@@ -115,8 +116,9 @@ class _StatsBody extends StatelessWidget {
               : '0.0';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.md),
+            padding: EdgeInsets.fromLTRB(
+                KScreen.hPad(context), AppSpacing.lg,
+                KScreen.hPad(context), AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -130,7 +132,7 @@ class _StatsBody extends StatelessWidget {
 
                 // KPI grid
                 GridView.count(
-                  crossAxisCount: 2,
+                  crossAxisCount: KScreen.statsColumns(context),
                   shrinkWrap: true,
                   physics:
                       const NeverScrollableScrollPhysics(),

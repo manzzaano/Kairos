@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/kairos_colors.dart';
@@ -90,49 +91,56 @@ class _TaskCardState extends State<TaskCard>
           onTapDown: _onTapDown,
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
-          child: AnimatedBuilder(
-            animation: _glowCtrl,
-            builder: (ctx, child) {
-              final g = _glowCtrl.value;
-              final glowActive = g > 0 && g < 1;
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: kc.bg2,
-                  borderRadius:
-                      BorderRadius.circular(AppShapes.roundedSm),
-                  border: Border.all(
-                    color: glowActive
-                        ? kc.success
-                            .withValues(alpha: (1 - g).clamp(0.3, 1.0))
-                        : kc.line,
-                    width: glowActive ? 1.5 : 1.0,
-                  ),
-                  boxShadow: glowActive
-                      ? [
-                          BoxShadow(
-                            color: kc.success.withValues(
-                                alpha: (1 - g).clamp(0.0, 0.35)),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : isDark
-                          ? null
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppShapes.roundedSm),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: AnimatedBuilder(
+                animation: _glowCtrl,
+                builder: (ctx, child) {
+                  final g = _glowCtrl.value;
+                  final glowActive = g > 0 && g < 1;
+                  final fillColor = isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white.withValues(alpha: 0.80);
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: fillColor,
+                      borderRadius:
+                          BorderRadius.circular(AppShapes.roundedSm),
+                      border: Border.all(
+                        color: glowActive
+                            ? kc.success
+                                .withValues(alpha: (1 - g).clamp(0.3, 1.0))
+                            : isDark
+                                ? Colors.white.withValues(alpha: 0.09)
+                                : Colors.black.withValues(alpha: 0.06),
+                        width: glowActive ? 1.5 : 1.0,
+                      ),
+                      boxShadow: glowActive
+                          ? [
+                              BoxShadow(
+                                color: kc.success.withValues(
+                                    alpha: (1 - g).clamp(0.0, 0.35)),
+                                blurRadius: 16,
+                                spreadRadius: 1,
+                              ),
+                            ]
                           : [
                               BoxShadow(
-                                color: Colors.black
-                                    .withValues(alpha: 0.05),
-                                blurRadius: 8,
+                                color: Colors.black.withValues(
+                                    alpha: isDark ? 0.20 : 0.04),
+                                blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ],
-                ),
-                child: child,
-              );
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    child: child,
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,9 +246,11 @@ class _TaskCardState extends State<TaskCard>
                 ],
               ],
             ),
-          ),
-        ),
-      ),
+          ),        // AnimatedBuilder
+        ),          // BackdropFilter
+      ),            // ClipRRect
+    ),              // GestureDetector
+  ),                // ScaleTransition
     );
   }
 }

@@ -9,6 +9,7 @@ import '../../../tasks/domain/entities/task.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/k_screen.dart';
 
 class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
@@ -27,7 +28,7 @@ class _FocusPageState extends State<FocusPage> {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return Scaffold(
-      backgroundColor: kc.bg,
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           final allTasks = state is TaskLoaded ? state.tasks : <Task>[];
@@ -42,8 +43,9 @@ class _FocusPageState extends State<FocusPage> {
           final timeLabel = hours > 0 ? '${hours}h ${mins}m' : '${mins}m';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, 64, AppSpacing.xl, AppSpacing.md),
+            padding: EdgeInsets.fromLTRB(
+                KScreen.hPad(context), KScreen.topPad(context),
+                KScreen.hPad(context), AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

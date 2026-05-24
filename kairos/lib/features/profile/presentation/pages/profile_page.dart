@@ -9,6 +9,7 @@ import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_shapes.dart';
 import '../../../../core/utils/xp_calculator.dart';
+import '../../../../core/utils/k_screen.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../sync/presentation/widgets/sync_sheet.dart';
 import '../../../sync/presentation/widgets/conflict_sheet.dart';
@@ -49,9 +50,11 @@ class ProfilePage extends StatelessWidget {
     final isGuest = user == null;
 
     return Scaffold(
-      backgroundColor: kc.bg,
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 64, 20, 12),
+        padding: EdgeInsets.fromLTRB(
+            KScreen.hPad(context), KScreen.topPad(context),
+            KScreen.hPad(context), 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
