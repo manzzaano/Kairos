@@ -13,7 +13,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../shared/widgets/task_card.dart';
 import '../../../../shared/widgets/fab_kairos.dart';
 import '../../../../shared/widgets/glass_card.dart';
-import '../../../../shared/widgets/kairos_background.dart';
+import '../../../../core/utils/k_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -54,10 +54,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          Positioned.fill(
-            child: KairosBackground(
-              withGlows: true,
-              child: BlocBuilder<TaskBloc, TaskState>(
+          BlocBuilder<TaskBloc, TaskState>(
                 builder: (context, state) {
                   if (state is TaskLoading) {
                     return Center(
@@ -100,8 +97,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     slivers: [
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg, 64, AppSpacing.lg, 0),
+                          padding: EdgeInsets.fromLTRB(
+                              KScreen.hPad(context), KScreen.topPad(context),
+                              KScreen.hPad(context), 0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -277,7 +275,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       SliverToBoxAdapter(
                         child: Padding(
                           padding:
-                              const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.sm),
+                              EdgeInsets.fromLTRB(KScreen.hPad(context), AppSpacing.md, KScreen.hPad(context), AppSpacing.sm),
                           child: Row(
                             children: [
                               Text('PENDIENTES',
@@ -316,8 +314,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             (ctx, i) {
                               if (i >= pending.length.clamp(0, 4)) return null;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: KScreen.hPad(ctx), vertical: AppSpacing.xs),
                                 child: TaskCard(
                                   task: pending[i],
                                   onTap: () =>
@@ -337,7 +335,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         SliverToBoxAdapter(
                           child: Padding(
                             padding:
-                                const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.sm),
+                                EdgeInsets.fromLTRB(KScreen.hPad(context), AppSpacing.xxl, KScreen.hPad(context), AppSpacing.sm),
                             child: Row(
                               children: [
                                 Text('COMPLETADAS',
@@ -380,8 +378,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   );
                 },
               ),
-            ),
-          ),
           Positioned(
             bottom: 100,
             right: 20,
