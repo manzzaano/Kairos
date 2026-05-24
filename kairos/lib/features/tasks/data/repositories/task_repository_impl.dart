@@ -10,9 +10,9 @@ class TaskRepositoryImpl implements ITaskRepository {
   TaskRepositoryImpl({required this.realmDataSource});
 
   @override
-  Future<Either<Failure, List<Task>>> getTasks({bool todayOnly = false}) async {
+  Future<Either<Failure, List<Task>>> getTasks() async {
     try {
-      final tasks = await realmDataSource.getTasks(todayOnly: todayOnly);
+      final tasks = await realmDataSource.getTasks();
       return Right(tasks);
     } catch (e) {
       return Left(CacheFailure('Failed to get tasks: ${e.toString()}'));

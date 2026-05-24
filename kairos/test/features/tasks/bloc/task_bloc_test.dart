@@ -22,9 +22,19 @@ class MockToggleSubtaskUseCase extends Mock implements ToggleSubtaskUseCase {}
 void main() {
   late TaskBloc taskBloc;
   late MockGetTasksUseCase mockGetTasksUseCase;
+  late MockCreateTaskUseCase mockCreateTaskUseCase;
+  late MockToggleTaskUseCase mockToggleTaskUseCase;
+  late MockDeleteTaskUseCase mockDeleteTaskUseCase;
+  late MockToggleSubtaskUseCase mockToggleSubtaskUseCase;
 
   const testTask = task_entities.Task(
-    id: '1',
+    id: 'abc-123',
+    title: 'Test Task',
+    priority: task_entities.Priority.high,
+    energyLevel: 5,
+  );
+
+  const testParams = TaskParams(
     title: 'Test Task',
     priority: task_entities.Priority.high,
     energyLevel: 5,
@@ -32,51 +42,140 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const GetTasksParams());
+    registerFallbackValue(testParams);
+    registerFallbackValue('abc-123');
   });
 
   setUp(() {
     mockGetTasksUseCase = MockGetTasksUseCase();
+    mockCreateTaskUseCase = MockCreateTaskUseCase();
+    mockToggleTaskUseCase = MockToggleTaskUseCase();
+    mockDeleteTaskUseCase = MockDeleteTaskUseCase();
+    mockToggleSubtaskUseCase = MockToggleSubtaskUseCase();
     taskBloc = TaskBloc(
       getTasksUseCase: mockGetTasksUseCase,
-      createTaskUseCase: MockCreateTaskUseCase(),
-      toggleTaskUseCase: MockToggleTaskUseCase(),
-      deleteTaskUseCase: MockDeleteTaskUseCase(),
-      toggleSubtaskUseCase: MockToggleSubtaskUseCase(),
+      createTaskUseCase: mockCreateTaskUseCase,
+      toggleTaskUseCase: mockToggleTaskUseCase,
+      deleteTaskUseCase: mockDeleteTaskUseCase,
+      toggleSubtaskUseCase: mockToggleSubtaskUseCase,
     );
   });
 
   tearDown(() => taskBloc.close());
 
+  // ── Estado inicial ──────────────────────────────────────────────────────────
+
   test('initial state is TaskInitial', () {
     expect(taskBloc.state, isA<TaskInitial>());
   });
 
+  // ── LoadTasksRequested ──────────────────────────────────────────────────────
+
   test('emits [TaskLoading, TaskLoaded] when load tasks succeeds', () async {
     when(() => mockGetTasksUseCase(any())).thenAnswer(
-      (_) async => Right(<task_entities.Task>[testTask]), // ignore: prefer_const_constructors
+      (_) async => const Right(<task_entities.Task>[testTask]),
     );
 
     taskBloc.add(const LoadTasksRequested());
-
     await Future.delayed(const Duration(milliseconds: 100));
 
     expect(taskBloc.state, isA<TaskLoaded>());
-    if (taskBloc.state is TaskLoaded) {
-      final loadedState = taskBloc.state as TaskLoaded;
-      expect(loadedState.tasks.length, 1);
-      expect(loadedState.tasks.first.title, 'Test Task');
-    }
+    final loaded = taskBloc.state as TaskLoaded;
+    expect(loaded.tasks.length, 1);
+    expect(loaded.tasks.first.title, 'Test Task');
   });
 
   test('emits TaskError when load tasks fails', () async {
     when(() => mockGetTasksUseCase(any())).thenAnswer(
-      (_) async => Left(CacheFailure('Failed to load')), // ignore: prefer_const_constructors
+      (_) async => const Left(CacheFailure('Failed to load')),
     );
 
     taskBloc.add(const LoadTasksRequested());
-
     await Future.delayed(const Duration(milliseconds: 100));
 
     expect(taskBloc.state, isA<TaskError>());
+    final error = taskBloc.state as TaskError;
+    expect(error.message, 'Failed to load');
+  });
+
+  // ── CreateTaskRequested ─────────────────────────────────────────────────────
+
+  test('CreateTaskRequested → crea y recarga lista', () async {
+    // El create devuelve la nueva tarea
+    when(() => mockCreateTaskUseCase(any()))
+        .thenAnswer((_) async => const Right(testTask));
+    // El reload posterior devuelve la lista actualizada
+    when(() => mockGetTasksUseCase(any()))
+        .thenAnswer((_) async => const Right(<task_entities.Task>[testTask]));
+
+    taskBloc.add(const CreateTaskRequested(testParams));
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    expect(taskBloc.state, isA<TaskLoaded>());
+    verify(() => mockCreateTaskUseCase(any())).called(1);
+  });
+
+  test('CreateTaskRequested falla → emite TaskError', () async {
+    when(() => mockCreateTaskUseCase(any()))
+        .thenAnswer((_) async => const Left(CacheFailure('Create failed')));
+
+    taskBloc.add(const CreateTaskRequested(testParams));
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    expect(taskBloc.state, isA<TaskError>());
+  });
+
+  // ── ToggleTaskRequested ─────────────────────────────────────────────────────
+
+  test('ToggleTaskRequested → toggle y recarga lista', () async {
+    when(() => mockToggleTaskUseCase(any()))
+        .thenAnswer((_) async => const Right(testTask));
+    when(() => mockGetTasksUseCase(any()))
+        .thenAnswer((_) async => const Right(<task_entities.Task>[testTask]));
+
+    taskBloc.add(const ToggleTaskRequested(id: 'abc-123'));
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    expect(taskBloc.state, isA<TaskLoaded>());
+    verify(() => mockToggleTaskUseCase('abc-123')).called(1);
+  });
+
+  // ── DeleteTaskRequested ─────────────────────────────────────────────────────
+
+  test('DeleteTaskRequested → elimina y recarga lista vacía', () async {
+    when(() => mockDeleteTaskUseCase(any()))
+        .thenAnswer((_) async => const Right(null));
+    when(() => mockGetTasksUseCase(any()))
+        .thenAnswer((_) async => const Right(<task_entities.Task>[]));
+
+    taskBloc.add(const DeleteTaskRequested(id: 'abc-123'));
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    expect(taskBloc.state, isA<TaskLoaded>());
+    final loaded = taskBloc.state as TaskLoaded;
+    expect(loaded.tasks, isEmpty);
+    verify(() => mockDeleteTaskUseCase('abc-123')).called(1);
+  });
+
+  // ── ToggleSubtaskRequested ──────────────────────────────────────────────────
+
+  test('ToggleSubtaskRequested → toggle subtarea y recarga', () async {
+    const taskWithSubtasks = task_entities.Task(
+      id: 'abc-123',
+      title: 'Task con subtareas',
+      priority: task_entities.Priority.low,
+      energyLevel: 2,
+      subtasks: ['Subtarea 1'],
+      subtasksDone: [true],
+    );
+    when(() => mockToggleSubtaskUseCase(any(), any()))
+        .thenAnswer((_) async => const Right(taskWithSubtasks));
+    when(() => mockGetTasksUseCase(any())).thenAnswer(
+        (_) async => const Right(<task_entities.Task>[taskWithSubtasks]));
+
+    taskBloc.add(const ToggleSubtaskRequested(taskId: 'abc-123', subtaskIndex: 0));
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    expect(taskBloc.state, isA<TaskLoaded>());
   });
 }

@@ -9,5 +9,5 @@ class GetTasksUseCase extends UseCase<List<Task>, GetTasksParams> {
   GetTasksUseCase(this.repository);
   @override
   Future<Either<Failure, List<Task>>> call(GetTasksParams params) =>
-      repository.getTasks(todayOnly: params.todayOnly);
+      repository.getTasks();
 }

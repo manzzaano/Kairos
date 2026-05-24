@@ -38,7 +38,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       LoadTasksRequested event, Emitter<TaskState> emit) async {
     emit(const TaskLoading());
     final result =
-        await _getTasksUseCase(GetTasksParams(todayOnly: event.todayOnly));
+        await _getTasksUseCase(const GetTasksParams());
     emit(result.fold(
       (failure) => TaskError(message: failure.message),
       (tasks) => TaskLoaded(tasks: tasks),

@@ -14,6 +14,7 @@ import '../../../../shared/widgets/task_card.dart';
 import '../../../../shared/widgets/fab_kairos.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../core/utils/k_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -29,10 +30,18 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _greeting() {
+    final email = Supabase.instance.client.auth.currentUser?.email;
+    final name = () {
+      if (email == null) return 'Explorador';
+      final local = email.split('@').first.split('.').first
+          .replaceAll(RegExp(r'[0-9]'), '').trim();
+      if (local.isEmpty) return 'Explorador';
+      return local[0].toUpperCase() + local.substring(1);
+    }();
     final h = DateTime.now().hour;
-    if (h < 13) return 'Buenos días, Ismael';
-    if (h < 20) return 'Buenas tardes, Ismael';
-    return 'Buenas noches, Ismael';
+    if (h < 13) return 'Buenos días, $name';
+    if (h < 20) return 'Buenas tardes, $name';
+    return 'Buenas noches, $name';
   }
 
   String _dateLabel() {
