@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/task_bloc.dart';
@@ -443,28 +444,68 @@ class _GroupedTaskList extends StatelessWidget {
       groups.putIfAbsent(t.project, () => []).add(t);
     }
 
+    int globalIndex = 0;
     return ListView(
+      physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.fromLTRB(KScreen.hPad(context), 0,
           KScreen.hPad(context), KScreen.bottomPad(context)),
       children: [
         for (final entry in groups.entries) ...[
+          // Group header mejorado
           Padding(
             padding: const EdgeInsets.only(
-                top: AppSpacing.lg, bottom: AppSpacing.sm),
+                top: AppSpacing.xl, bottom: AppSpacing.sm),
             child: Row(
               children: [
+                Container(
+                  width: 3,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: kc.accent.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Text(entry.key.toUpperCase(),
                     style: AppTypography.mono11
-                        .copyWith(color: kc.text3)),
+                        .copyWith(color: kc.text2,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.8)),
                 const SizedBox(width: 8),
-                Text('${entry.value.length}',
-                    style: AppTypography.mono11
-                        .copyWith(color: kc.text4)),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: kc.line,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text('${entry.value.length}',
+                      style: AppTypography.mono11.copyWith(
+                          color: kc.text3, fontSize: 10)),
+                ),
               ],
             ),
-          ),
+          ).animate().fadeIn(
+              delay: Duration(milliseconds: globalIndex * 30),
+              duration: 300.ms),
+
           for (final task in entry.value)
-            _SwipeableTaskRow(key: ValueKey(task.id), task: task),
+            Builder(builder: (_) {
+              final delay =
+                  Duration(milliseconds: 60 + (globalIndex++) * 40);
+              return _SwipeableTaskRow(
+                key: ValueKey(task.id),
+                task: task,
+              )
+                  .animate()
+                  .fadeIn(delay: delay, duration: 300.ms)
+                  .slideX(
+                      begin: -0.05,
+                      end: 0,
+                      delay: delay,
+                      duration: 280.ms,
+                      curve: Curves.easeOut);
+            }),
         ],
         const SizedBox(height: 100),
       ],
@@ -538,6 +579,7 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -546,16 +588,36 @@ class _FilterChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? kc.text : kc.bg2,
+          color: active
+              ? kc.accent
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(AppShapes.pill),
-          border: active ? null : Border.all(color: kc.line),
+          border: Border.all(
+            color: active
+                ? kc.accent
+                : isDark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.black.withValues(alpha: 0.08),
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: kc.accent.withValues(alpha: 0.30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         child: Text(label,
             style: AppTypography.caption12.copyWith(
-                color: active ? kc.bg : kc.text2,
+                color: active
+                    ? Colors.black.withValues(alpha: 0.85)
+                    : kc.text2,
                 fontWeight:
                     active ? FontWeight.w600 : FontWeight.w400)),
       ),

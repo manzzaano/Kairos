@@ -189,6 +189,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                             progress: progress,
                             accent: kc.accent,
                             isCompleted: isCompleted,
+                            pulseValue: isRunning ? _pulseAnim.value : 0.0,
                           ),
                         ),
                         Column(
@@ -459,72 +460,132 @@ class _ArcPainter extends CustomPainter {
   final double progress;
   final Color accent;
   final bool isCompleted;
+  final double pulseValue; // 0..1 para el glow pulsante
+
   const _ArcPainter({
     required this.progress,
     required this.accent,
     required this.isCompleted,
+    this.pulseValue = 0.0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 8;
+    final r = size.width / 2 - 14; // radio del anillo principal
 
-    // Track ring
+    // ── 1. Anillo decorativo exterior (muy sutil) ──────────────
     canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..color = const Color(0x14FFFFFF)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3);
+      center, r + 18,
+      Paint()
+        ..color = accent.withValues(alpha: 0.04)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    // ── 2. Track del anillo principal ──────────────────────────
+    canvas.drawCircle(
+      center, r,
+      Paint()
+        ..color = const Color(0x18FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6,
+    );
+
+    // ── 3. Anillo interior decorativo ──────────────────────────
+    canvas.drawCircle(
+      center, r - 22,
+      Paint()
+        ..color = const Color(0x0AFFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
 
     if (isCompleted) {
-      // Full circle glow for completed
-      final glowPaint = Paint()
-        ..color = accent.withValues(alpha: 0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawCircle(center, radius, glowPaint);
-
-      final solidPaint = Paint()
-        ..color = accent
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round;
-      canvas.drawCircle(center, radius, solidPaint);
+      // Completed: círculo lleno con glow fuerte
+      // Glow difuso exterior
+      canvas.drawCircle(
+        center, r,
+        Paint()
+          ..color = accent.withValues(alpha: 0.45)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 12
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+      );
+      // Glow medio
+      canvas.drawCircle(
+        center, r,
+        Paint()
+          ..color = accent.withValues(alpha: 0.6)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      // Línea sólida
+      canvas.drawCircle(
+        center, r,
+        Paint()
+          ..color = accent
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..strokeCap = StrokeCap.round,
+      );
       return;
     }
 
     if (progress > 0) {
-      // Glow layer
-      final glowPaint = Paint()
-        ..color = accent.withValues(alpha: 0.35)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      final sweep = progress * 2 * pi;
+      final arcRect = Rect.fromCircle(center: center, radius: r);
+      const start = -pi / 2;
+
+      // ── 4. Glow difuso exterior del arco ─────────────────────
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -pi / 2,
-        progress * 2 * pi,
-        false,
-        glowPaint,
+        arcRect, start, sweep, false,
+        Paint()
+          ..color = accent.withValues(alpha: 0.20 + pulseValue * 0.12)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 20
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
       );
 
-      // Sharp arc
-      final arcPaint = Paint()
-        ..color = accent
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round;
+      // ── 5. Glow medio ─────────────────────────────────────────
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -pi / 2,
-        progress * 2 * pi,
-        false,
-        arcPaint,
+        arcRect, start, sweep, false,
+        Paint()
+          ..color = accent.withValues(alpha: 0.50 + pulseValue * 0.15)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 8
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+
+      // ── 6. Arco sólido (foreground) ──────────────────────────
+      canvas.drawArc(
+        arcRect, start, sweep, false,
+        Paint()
+          ..color = accent
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..strokeCap = StrokeCap.round,
+      );
+
+      // ── 7. Punto luminoso en la punta del arco ────────────────
+      final tipAngle = start + sweep;
+      final tipX = center.dx + r * cos(tipAngle);
+      final tipY = center.dy + r * sin(tipAngle);
+      canvas.drawCircle(
+        Offset(tipX, tipY), 5,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        Offset(tipX, tipY), 8,
+        Paint()
+          ..color = accent.withValues(alpha: 0.5)
+          ..style = PaintingStyle.fill
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
     }
   }
@@ -533,5 +594,6 @@ class _ArcPainter extends CustomPainter {
   bool shouldRepaint(_ArcPainter old) =>
       old.progress != progress ||
       old.accent != accent ||
-      old.isCompleted != isCompleted;
+      old.isCompleted != isCompleted ||
+      old.pulseValue != pulseValue;
 }

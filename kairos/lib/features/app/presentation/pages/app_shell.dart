@@ -59,9 +59,12 @@ class _KairosTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Safe area: respeta barra de navegación del sistema (gesture o botones)
+    final sysBottom = MediaQuery.of(context).padding.bottom;
+    final bottomPad = sysBottom > 0 ? sysBottom + 6.0 : 20.0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPad),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(99),
         child: BackdropFilter(
@@ -71,18 +74,18 @@ class _KairosTabBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark
                   ? const Color(0x99000000)
-                  : const Color(0xCCFFFFFF),
+                  : const Color(0xEBF2F2F2),
               borderRadius: BorderRadius.circular(99),
               border: Border.all(
                 color: isDark
                     ? const Color(0x26FFFFFF)
-                    : const Color(0x1A000000),
+                    : const Color(0x33000000),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
-                  blurRadius: 40,
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.10),
+                  blurRadius: isDark ? 40 : 20,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -104,13 +107,17 @@ class _KairosTabBar extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // En light mode text3 (#909090) tiene poco contraste —
+                          // se usa text2 (#525252) para los ítems inactivos.
                           AnimatedScale(
                             scale: active ? 1.08 : 1.0,
                             duration: const Duration(milliseconds: 200),
                             curve: Curves.easeOut,
                             child: _tabIcon(
                               type,
-                              color: active ? kc.accent : kc.text3,
+                              color: active
+                                  ? kc.accent
+                                  : (isDark ? kc.text3 : kc.text2),
                               sw: active ? 1.8 : 1.4,
                             ),
                           ),
@@ -119,7 +126,9 @@ class _KairosTabBar extends StatelessWidget {
                             label,
                             style: TextStyle(
                               fontSize: 10,
-                              color: active ? kc.accent : kc.text3,
+                              color: active
+                                  ? kc.accent
+                                  : (isDark ? kc.text3 : kc.text2),
                               fontWeight: active
                                   ? FontWeight.w600
                                   : FontWeight.w400,

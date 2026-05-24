@@ -101,42 +101,75 @@ class _TaskCardState extends State<TaskCard>
                   final g = _glowCtrl.value;
                   final glowActive = g > 0 && g < 1;
                   final fillColor = isDark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.white.withValues(alpha: 0.80);
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: fillColor,
-                      borderRadius:
-                          BorderRadius.circular(AppShapes.roundedSm),
-                      border: Border.all(
-                        color: glowActive
-                            ? kc.success
-                                .withValues(alpha: (1 - g).clamp(0.3, 1.0))
-                            : isDark
-                                ? Colors.white.withValues(alpha: 0.09)
-                                : Colors.black.withValues(alpha: 0.06),
-                        width: glowActive ? 1.5 : 1.0,
+                      ? Colors.white.withValues(alpha: 0.055)
+                      : Colors.white.withValues(alpha: 0.82);
+
+                  // Color de borde izquierdo según prioridad
+                  final priorityColor = switch (widget.task.priority) {
+                    Priority.high   => const Color(0xFFF87171),
+                    Priority.medium => const Color(0xFFFB923C),
+                    Priority.low    => Colors.transparent,
+                  };
+
+                  return Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                        decoration: BoxDecoration(
+                          color: fillColor,
+                          borderRadius:
+                              BorderRadius.circular(AppShapes.roundedSm),
+                          border: Border.all(
+                            color: glowActive
+                                ? kc.success
+                                    .withValues(alpha: (1 - g).clamp(0.3, 1.0))
+                                : isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black.withValues(alpha: 0.05),
+                            width: glowActive ? 1.5 : 1.0,
+                          ),
+                          boxShadow: glowActive
+                              ? [
+                                  BoxShadow(
+                                    color: kc.success.withValues(
+                                        alpha: (1 - g).clamp(0.0, 0.35)),
+                                    blurRadius: 16,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                        alpha: isDark ? 0.18 : 0.04),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                        ),
+                        child: child,
                       ),
-                      boxShadow: glowActive
-                          ? [
-                              BoxShadow(
-                                color: kc.success.withValues(
-                                    alpha: (1 - g).clamp(0.0, 0.35)),
-                                blurRadius: 16,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                    alpha: isDark ? 0.20 : 0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                    ),
-                    child: child,
+                      // Borde izquierdo de prioridad
+                      if (widget.task.priority != Priority.low &&
+                          !widget.task.isDone)
+                        Positioned(
+                          left: 0,
+                          top: 8,
+                          bottom: 8,
+                          child: Container(
+                            width: 3,
+                            decoration: BoxDecoration(
+                              color: priorityColor,
+                              borderRadius: BorderRadius.circular(99),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: priorityColor.withValues(alpha: 0.5),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
                 child: Column(
