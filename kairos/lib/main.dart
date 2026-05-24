@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/di/injection_container.dart';
 import 'core/constants/app_constants.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,5 +14,6 @@ void main() async {
   );
 
   setupServiceLocator();
+  await NotificationService.init();
   runApp(const KairosApp());
 }

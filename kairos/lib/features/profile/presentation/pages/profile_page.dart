@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/theme/theme_cubit.dart';
@@ -10,6 +11,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_shapes.dart';
 import '../../../../core/utils/xp_calculator.dart';
 import '../../../../core/utils/k_screen.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../sync/presentation/widgets/sync_sheet.dart';
 import '../../../sync/presentation/widgets/conflict_sheet.dart';
@@ -395,15 +397,7 @@ class ProfilePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               child: Column(
                 children: [
-                  _ActionRow(
-                      icon: Icons.notifications_outlined,
-                      label: 'Notificaciones',
-                      sub: 'Activadas',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Configuración de notificaciones disponible próximamente')),
-                        );
-                      }),
+                  const _NotificationsRow(),
                   Divider(color: kc.line, height: 1),
                   _ActionRow(
                       icon: Icons.privacy_tip_outlined,
@@ -473,7 +467,7 @@ class ProfilePage extends StatelessWidget {
                     fontSize: 10, color: kc.text4),
               ),
             ),
-            const SizedBox(height: 80),
+            SizedBox(height: KScreen.bottomPad(context)),
           ],
         ),
       ),
@@ -506,12 +500,42 @@ class _SyncToggleRow extends StatefulWidget {
 }
 
 class _SyncToggleRowState extends State<_SyncToggleRow> {
-  late bool _syncActive;
+  bool _syncActive = true;
+  String _lastSyncLabel = 'Nunca sincronizado';
+
+  static const _kSyncActiveKey = 'sync_active';
+  static const _kLastSyncKey = 'last_sync_ts';
 
   @override
   void initState() {
     super.initState();
-    _syncActive = true;
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tsStr = prefs.getString(_kLastSyncKey);
+    setState(() {
+      _syncActive = prefs.getBool(_kSyncActiveKey) ?? true;
+      if (tsStr != null) {
+        final dt = DateTime.tryParse(tsStr);
+        if (dt != null) _lastSyncLabel = _relativeTime(dt);
+      }
+    });
+  }
+
+  Future<void> _toggleSync(bool val) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kSyncActiveKey, val);
+    setState(() => _syncActive = val);
+  }
+
+  static String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'hace un momento';
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'hace ${diff.inHours}h';
+    return 'hace ${diff.inDays} día${diff.inDays > 1 ? "s" : ""}';
   }
 
   @override
@@ -521,11 +545,7 @@ class _SyncToggleRowState extends State<_SyncToggleRow> {
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _syncActive = !_syncActive;
-          });
-        },
+        onTap: () => _toggleSync(!_syncActive),
         child: Row(
           children: [
             Container(
@@ -578,11 +598,120 @@ class _SyncToggleRowState extends State<_SyncToggleRow> {
                 ),
                 Text(
                   _syncActive
-                      ? 'Realm · Última sync: hace 2 min'
+                      ? 'Realm · $_lastSyncLabel'
                       : 'Sincronización offline',
                   style: AppTypography.mono11.copyWith(color: kc.text3),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Toggle de notificaciones con estado persistido en SharedPreferences.
+class _NotificationsRow extends StatefulWidget {
+  const _NotificationsRow();
+
+  @override
+  State<_NotificationsRow> createState() => _NotificationsRowState();
+}
+
+class _NotificationsRowState extends State<_NotificationsRow> {
+  bool _enabled = false;
+  static const _kKey = 'notifications_enabled';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _enabled = prefs.getBool(_kKey) ?? false);
+  }
+
+  Future<void> _toggle() async {
+    if (!_enabled) {
+      // Solicitar permisos la primera vez
+      final granted = await NotificationService.requestPermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Activa los permisos de notificaciones en Ajustes del sistema'),
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      await NotificationService.cancelAll();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kKey, !_enabled);
+    setState(() => _enabled = !_enabled);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kc = context.kc;
+    return GestureDetector(
+      onTap: _toggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            Icon(
+              _enabled
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_off_outlined,
+              size: 20,
+              color: _enabled ? kc.accent : kc.text3,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Notificaciones',
+                      style: AppTypography.body13),
+                  Text(
+                    _enabled ? 'Recordatorios activos' : 'Desactivadas',
+                    style: AppTypography.mono11.copyWith(color: kc.text3),
+                  ),
+                ],
+              ),
+            ),
+            // Toggle visual
+            Container(
+              width: 38,
+              height: 22,
+              decoration: BoxDecoration(
+                color: _enabled ? kc.accent : kc.line,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 200),
+                    left: _enabled ? 18 : 2,
+                    top: 2,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -631,12 +760,10 @@ class _SyncActionRow extends StatelessWidget {
 class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String? sub;
   final VoidCallback onTap;
   const _ActionRow({
     required this.icon,
     required this.label,
-    this.sub,
     required this.onTap,
   });
 
@@ -652,18 +779,7 @@ class _ActionRow extends StatelessWidget {
           children: [
             Icon(icon, color: kc.text2, size: 18),
             const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: AppTypography.body13),
-                  if (sub != null)
-                    Text(sub!,
-                        style: AppTypography.caption12
-                            .copyWith(color: kc.text3)),
-                ],
-              ),
-            ),
+            Expanded(child: Text(label, style: AppTypography.body13)),
             Icon(Icons.chevron_right, color: kc.text3, size: 14),
           ],
         ),
