@@ -5,6 +5,7 @@ import 'package:kairos/features/tasks/domain/usecases/get_tasks_usecase.dart';
 import 'package:kairos/features/tasks/domain/usecases/create_task_usecase.dart';
 import 'package:kairos/features/tasks/domain/usecases/toggle_task_usecase.dart';
 import 'package:kairos/features/tasks/domain/usecases/delete_task_usecase.dart';
+import 'package:kairos/features/tasks/domain/usecases/toggle_subtask_usecase.dart';
 import 'package:kairos/features/tasks/presentation/bloc/task_bloc.dart';
 import 'package:kairos/features/tasks/presentation/bloc/task_event.dart';
 import 'package:kairos/features/tasks/presentation/bloc/task_state.dart';
@@ -16,6 +17,7 @@ class MockGetTasksUseCase extends Mock implements GetTasksUseCase {}
 class MockCreateTaskUseCase extends Mock implements CreateTaskUseCase {}
 class MockToggleTaskUseCase extends Mock implements ToggleTaskUseCase {}
 class MockDeleteTaskUseCase extends Mock implements DeleteTaskUseCase {}
+class MockToggleSubtaskUseCase extends Mock implements ToggleSubtaskUseCase {}
 
 void main() {
   late TaskBloc taskBloc;
@@ -39,6 +41,7 @@ void main() {
       createTaskUseCase: MockCreateTaskUseCase(),
       toggleTaskUseCase: MockToggleTaskUseCase(),
       deleteTaskUseCase: MockDeleteTaskUseCase(),
+      toggleSubtaskUseCase: MockToggleSubtaskUseCase(),
     );
   });
 

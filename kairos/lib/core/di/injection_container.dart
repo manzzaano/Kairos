@@ -8,6 +8,7 @@ import '../../features/tasks/domain/usecases/create_task_usecase.dart';
 import '../../features/tasks/domain/usecases/delete_task_usecase.dart';
 import '../../features/tasks/domain/usecases/get_tasks_usecase.dart';
 import '../../features/tasks/domain/usecases/toggle_task_usecase.dart';
+import '../../features/tasks/domain/usecases/toggle_subtask_usecase.dart';
 import '../../features/tasks/presentation/bloc/task_bloc.dart';
 import '../../features/focus/presentation/bloc/focus_bloc.dart';
 import '../../features/tasks/data/models/task_object.dart';
@@ -24,11 +25,12 @@ void setupServiceLocator() {
     SupabaseSyncService(supabase: supabaseClient),
   );
 
-  // Realm — schema v1. En producción no borra datos en migración.
+  // Realm — schema v2 (añade subtasks + subtasksDone).
+  // shouldDeleteIfMigrationNeeded: true para migración automática durante desarrollo.
   final config = Configuration.local(
     [TaskObject.schema],
-    schemaVersion: 1,
-    shouldDeleteIfMigrationNeeded: false,
+    schemaVersion: 2,
+    shouldDeleteIfMigrationNeeded: true,
   );
   final realm = Realm(config);
   getIt.registerSingleton<Realm>(realm);
@@ -52,6 +54,9 @@ void setupServiceLocator() {
   getIt.registerSingleton<DeleteTaskUseCase>(
     DeleteTaskUseCase(getIt<ITaskRepository>()),
   );
+  getIt.registerSingleton<ToggleSubtaskUseCase>(
+    ToggleSubtaskUseCase(getIt<ITaskRepository>()),
+  );
 
   // BLoCs
   getIt.registerSingleton<TaskBloc>(
@@ -60,6 +65,7 @@ void setupServiceLocator() {
       createTaskUseCase: getIt<CreateTaskUseCase>(),
       toggleTaskUseCase: getIt<ToggleTaskUseCase>(),
       deleteTaskUseCase: getIt<DeleteTaskUseCase>(),
+      toggleSubtaskUseCase: getIt<ToggleSubtaskUseCase>(),
     ),
   );
   getIt.registerSingleton<FocusBloc>(FocusBloc());

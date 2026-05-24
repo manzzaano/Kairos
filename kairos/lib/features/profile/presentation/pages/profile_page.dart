@@ -8,9 +8,13 @@ import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_shapes.dart';
+import '../../../../core/utils/xp_calculator.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../sync/presentation/widgets/sync_sheet.dart';
 import '../../../sync/presentation/widgets/conflict_sheet.dart';
+import '../../../tasks/domain/entities/task.dart';
+import '../../../tasks/presentation/bloc/task_bloc.dart';
+import '../../../tasks/presentation/bloc/task_state.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -126,6 +130,114 @@ class ProfilePage extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── XP / Karma section ──────────────────────────────────────────
+            _SectionHeader('PROGRESIÓN'),
+            BlocBuilder<TaskBloc, TaskState>(
+              builder: (context, state) {
+                final tasks =
+                    state is TaskLoaded ? state.tasks : <Task>[];
+                final xp = XpCalculator.totalXp(tasks);
+                final lvl = XpCalculator.level(xp);
+                final lvlName = XpCalculator.levelName(lvl);
+                final progress = XpCalculator.levelProgress(xp);
+                final toNext = XpCalculator.xpToNext(xp);
+
+                // Streak calculation
+                int streak = 0;
+                if (state is TaskLoaded) {
+                  DateTime check = DateTime(DateTime.now().year,
+                      DateTime.now().month, DateTime.now().day);
+                  while (true) {
+                    final hasAny = state.tasks.any((t) =>
+                        t.completedAt != null &&
+                        DateTime(t.completedAt!.year,
+                                t.completedAt!.month,
+                                t.completedAt!.day) ==
+                            check);
+                    if (!hasAny) break;
+                    streak++;
+                    check =
+                        check.subtract(const Duration(days: 1));
+                  }
+                }
+                final karmaLabel =
+                    XpCalculator.karmaLabel(tasks, streak);
+
+                return SolidCard(
+                  padding: const EdgeInsets.all(18),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          // Level badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: kc.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: kc.accent
+                                      .withValues(alpha: 0.35)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bolt,
+                                    color: kc.accent, size: 14),
+                                const SizedBox(width: 4),
+                                Text('NV $lvl',
+                                    style: AppTypography.mono11
+                                        .copyWith(
+                                            color: kc.accent,
+                                            fontWeight:
+                                                FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(lvlName,
+                                    style: AppTypography.body13
+                                        .copyWith(
+                                            fontWeight:
+                                                FontWeight.w600)),
+                                Text('$xp XP · faltan $toNext para NV ${lvl + 1}',
+                                    style: AppTypography.mono11
+                                        .copyWith(color: kc.text3)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: kc.bg3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              kc.accent),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(karmaLabel,
+                          style: AppTypography.caption12
+                              .copyWith(color: kc.text2)),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 24),
 

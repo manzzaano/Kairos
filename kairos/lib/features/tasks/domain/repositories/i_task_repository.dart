@@ -7,4 +7,5 @@ abstract class ITaskRepository {
   Future<Either<Failure, Task>> createTask(TaskParams params);
   Future<Either<Failure, Task>> toggleTask(String id);
   Future<Either<Failure, void>> deleteTask(String id);
+  Future<Either<Failure, Task>> toggleSubtask(String taskId, int subtaskIndex);
 }

@@ -24,6 +24,8 @@ class TaskObject extends _TaskObject
     String? dueLabel,
     DateTime? completedAt,
     DateTime? createdAt,
+    Iterable<String> subtasks = const [],
+    Iterable<bool> subtasksDone = const [],
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'title', title);
@@ -37,6 +39,10 @@ class TaskObject extends _TaskObject
     RealmObjectBase.set(this, 'project', project);
     RealmObjectBase.set(this, 'completedAt', completedAt);
     RealmObjectBase.set(this, 'createdAt', createdAt);
+    RealmObjectBase.set<RealmList<String>>(
+        this, 'subtasks', RealmList<String>(subtasks));
+    RealmObjectBase.set<RealmList<bool>>(
+        this, 'subtasksDone', RealmList<bool>(subtasksDone));
   }
 
   TaskObject._();
@@ -67,8 +73,7 @@ class TaskObject extends _TaskObject
   @override
   int get energyLevel => RealmObjectBase.get<int>(this, 'energyLevel') as int;
   @override
-  set energyLevel(int value) =>
-      RealmObjectBase.set(this, 'energyLevel', value);
+  set energyLevel(int value) => RealmObjectBase.set(this, 'energyLevel', value);
 
   @override
   String? get dueLabel =>
@@ -113,6 +118,20 @@ class TaskObject extends _TaskObject
       RealmObjectBase.set(this, 'createdAt', value);
 
   @override
+  RealmList<String> get subtasks =>
+      RealmObjectBase.get<String>(this, 'subtasks') as RealmList<String>;
+  @override
+  set subtasks(covariant RealmList<String> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
+  RealmList<bool> get subtasksDone =>
+      RealmObjectBase.get<bool>(this, 'subtasksDone') as RealmList<bool>;
+  @override
+  set subtasksDone(covariant RealmList<bool> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
   Stream<RealmObjectChanges<TaskObject>> get changes =>
       RealmObjectBase.getChanges<TaskObject>(this);
 
@@ -137,6 +156,8 @@ class TaskObject extends _TaskObject
       'project': project.toEJson(),
       'completedAt': completedAt.toEJson(),
       'createdAt': createdAt.toEJson(),
+      'subtasks': subtasks.toEJson(),
+      'subtasksDone': subtasksDone.toEJson(),
     };
   }
 
@@ -167,6 +188,8 @@ class TaskObject extends _TaskObject
           dueLabel: fromEJson(ejson['dueLabel']),
           completedAt: fromEJson(ejson['completedAt']),
           createdAt: fromEJson(ejson['createdAt']),
+          subtasks: fromEJson(ejson['subtasks']),
+          subtasksDone: fromEJson(ejson['subtasksDone']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -190,6 +213,10 @@ class TaskObject extends _TaskObject
       SchemaProperty('completedAt', RealmPropertyType.timestamp,
           optional: true),
       SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
+      SchemaProperty('subtasks', RealmPropertyType.string,
+          collectionType: RealmCollectionType.list),
+      SchemaProperty('subtasksDone', RealmPropertyType.bool,
+          collectionType: RealmCollectionType.list),
     ]);
   }();
 
