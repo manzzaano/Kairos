@@ -24,9 +24,10 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _pressCtrl;
   late final Animation<double> _scaleAnim;
+  late final AnimationController _glowCtrl;
 
   @override
   void initState() {
@@ -41,11 +42,25 @@ class _TaskCardState extends State<TaskCard>
     _scaleAnim = Tween<double>(begin: 1.0, end: 0.97).animate(
       CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut),
     );
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+  }
+
+  @override
+  void didUpdateWidget(TaskCard old) {
+    super.didUpdateWidget(old);
+    // Completar tarea → breve glow verde
+    if (widget.task.isDone && !old.task.isDone) {
+      _glowCtrl.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
     _pressCtrl.dispose();
+    _glowCtrl.dispose();
     super.dispose();
   }
 
@@ -57,6 +72,9 @@ class _TaskCardState extends State<TaskCard>
   Widget build(BuildContext context) {
     final kc = context.kc;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasSubtasks = widget.task.subtasks.isNotEmpty;
+    final doneSubtasks =
+        widget.task.subtasksDone.where((d) => d).length;
 
     return Semantics(
       label:
@@ -72,86 +90,152 @@ class _TaskCardState extends State<TaskCard>
           onTapDown: _onTapDown,
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: kc.bg2,
-              borderRadius: BorderRadius.circular(AppShapes.roundedSm),
-              border: Border.all(color: kc.line),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Row(
+          child: AnimatedBuilder(
+            animation: _glowCtrl,
+            builder: (ctx, child) {
+              final g = _glowCtrl.value;
+              final glowActive = g > 0 && g < 1;
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: kc.bg2,
+                  borderRadius:
+                      BorderRadius.circular(AppShapes.roundedSm),
+                  border: Border.all(
+                    color: glowActive
+                        ? kc.success
+                            .withValues(alpha: (1 - g).clamp(0.3, 1.0))
+                        : kc.line,
+                    width: glowActive ? 1.5 : 1.0,
+                  ),
+                  boxShadow: glowActive
+                      ? [
+                          BoxShadow(
+                            color: kc.success.withValues(
+                                alpha: (1 - g).clamp(0.0, 0.35)),
+                            blurRadius: 16,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black
+                                    .withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                ),
+                child: child,
+              );
+            },
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Semantics(
-                  label: widget.task.isDone
-                      ? 'Marcar como pendiente'
-                      : 'Marcar como completada',
-                  button: true,
-                  child: _AnimatedCheckbox(
-                    checked: widget.task.isDone,
-                    accent: kc.accent,
-                    borderColor: widget.task.isDone ? kc.accent : kc.line2,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      widget.onToggle?.call();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 200),
-                        style: AppTypography.body14.copyWith(
-                          fontWeight: FontWeight.w500,
-                          decoration: widget.task.isDone
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: widget.task.isDone ? kc.text3 : kc.text,
-                        ),
-                        child: Text(
-                          widget.task.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      label: widget.task.isDone
+                          ? 'Marcar como pendiente'
+                          : 'Marcar como completada',
+                      button: true,
+                      child: _AnimatedCheckbox(
+                        checked: widget.task.isDone,
+                        accent: kc.accent,
+                        borderColor: widget.task.isDone
+                            ? kc.accent
+                            : kc.line2,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          widget.onToggle?.call();
+                        },
                       ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          PriorityChip(priority: widget.task.priority),
-                          EnergyDots(level: widget.task.energyLevel),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: AppTypography.body14.copyWith(
+                              fontWeight: FontWeight.w500,
+                              decoration: widget.task.isDone
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: widget.task.isDone
+                                  ? kc.text3
+                                  : kc.text,
+                            ),
+                            child: Text(
+                              widget.task.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 4,
+                            crossAxisAlignment:
+                                WrapCrossAlignment.center,
                             children: [
-                              Icon(Icons.schedule,
-                                  size: 11, color: kc.text3),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${widget.task.estimateMinutes}m',
-                                style: AppTypography.mono11
-                                    .copyWith(color: kc.text3),
+                              PriorityChip(
+                                  priority: widget.task.priority),
+                              EnergyDots(level: widget.task.energyLevel),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.schedule,
+                                      size: 11, color: kc.text3),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${widget.task.estimateMinutes}m',
+                                    style: AppTypography.mono11
+                                        .copyWith(color: kc.text3),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+
+                // Subtask progress bar — visible solo si hay subtareas
+                if (hasSubtasks) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            value: widget.task.subtasks.isNotEmpty
+                                ? doneSubtasks /
+                                    widget.task.subtasks.length
+                                : 0,
+                            backgroundColor: kc.bg3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                kc.accent.withValues(alpha: 0.7)),
+                            minHeight: 3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$doneSubtasks/${widget.task.subtasks.length}',
+                        style: AppTypography.mono11
+                            .copyWith(color: kc.text3, fontSize: 10),
+                      ),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -237,7 +321,8 @@ class _AnimatedCheckboxState extends State<_AnimatedCheckbox>
         ),
         child: ScaleTransition(
           scale: _scale,
-          child: const Icon(Icons.check, size: 12, color: Color(0xFF1A0A00)),
+          child: const Icon(Icons.check,
+              size: 12, color: Color(0xFF1A0A00)),
         ),
       ),
     );
