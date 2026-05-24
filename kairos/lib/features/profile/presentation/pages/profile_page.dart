@@ -139,7 +139,7 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 24),
 
             // ── XP / Karma section ──────────────────────────────────────────
-            _SectionHeader('PROGRESIÓN'),
+            const _SectionHeader('PROGRESIÓN'),
             BlocBuilder<TaskBloc, TaskState>(
               builder: (context, state) {
                 final tasks =
@@ -246,7 +246,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            _SectionHeader('SINCRONIZACIÓN'),
+            const _SectionHeader('SINCRONIZACIÓN'),
             SolidCard(
               padding: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(14),
@@ -285,7 +285,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            _SectionHeader('APARIENCIA'),
+            const _SectionHeader('APARIENCIA'),
             SolidCard(
               padding: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(14),
@@ -391,7 +391,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            _SectionHeader('PREFERENCIAS'),
+            const _SectionHeader('PREFERENCIAS'),
             SolidCard(
               padding: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(14),

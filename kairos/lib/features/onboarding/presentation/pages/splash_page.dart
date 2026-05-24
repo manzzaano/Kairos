@@ -61,9 +61,9 @@ class _SplashPageState extends State<SplashPage>
                       ),
                     ),
                   ),
-                  KairosLogoMark(
+                  const KairosLogoMark(
                       size: 56,
-                      color: const Color(0xFFF0E6D7),
+                      color: Color(0xFFF0E6D7),
                       strokeWidth: 1.6,
                   ),
                 ],
