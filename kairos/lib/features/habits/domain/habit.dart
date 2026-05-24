@@ -68,7 +68,14 @@ class Habit {
           orElse: () => HabitFrequency.daily,
         ),
         completions: (json['completions'] as List<dynamic>? ?? [])
-            .map((s) => DateTime.parse(s as String))
+            .map((s) {
+              try {
+                return DateTime.parse(s as String);
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<DateTime>()
             .toList(),
       );
 }

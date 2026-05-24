@@ -24,6 +24,7 @@ class _OptimizePageState extends State<OptimizePage>
   String? _errorMessage;
   String? _aiExplanation;
   List<Map<String, dynamic>>? _optimizedOrder;
+  bool _sheetDismissedByButton = false;
 
   late final AnimationController _orbitCtrl;
 
@@ -231,6 +232,7 @@ class _OptimizePageState extends State<OptimizePage>
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
+                  _sheetDismissedByButton = true;
                   Navigator.of(context).pop(); // Cierra bottom sheet
                   context.pop(); // Vuelve al dashboard
                   // Recargar tareas para reflejar posibles cambios
@@ -249,8 +251,9 @@ class _OptimizePageState extends State<OptimizePage>
         ),
       ),
     ).then((_) {
-      // Si se cierra el sheet sin pulsar botón, también volvemos
-      if (mounted) context.pop();
+      // Si se cierra el sheet sin pulsar botón (swipe down), también volvemos
+      if (mounted && !_sheetDismissedByButton) context.pop();
+      _sheetDismissedByButton = false;
     });
   }
 

@@ -34,9 +34,14 @@ class _FocusPageState extends State<FocusPage> {
           final allTasks = state is TaskLoaded ? state.tasks : <Task>[];
           final pending = allTasks.where((t) => !t.isDone).take(4).toList();
 
-          final completedToday = allTasks.where((t) => t.isDone).length;
-          final totalTimeMinutes = allTasks
-              .where((t) => t.isDone)
+          final today = DateTime.now();
+          final todayStart = DateTime(today.year, today.month, today.day);
+          final completedTodayTasks = allTasks.where((t) =>
+              t.isDone &&
+              t.completedAt != null &&
+              !t.completedAt!.isBefore(todayStart));
+          final completedToday = completedTodayTasks.length;
+          final totalTimeMinutes = completedTodayTasks
               .fold<int>(0, (sum, t) => sum + t.estimateMinutes);
           final hours = totalTimeMinutes ~/ 60;
           final mins = totalTimeMinutes % 60;

@@ -26,11 +26,15 @@ void setupServiceLocator() {
   );
 
   // Realm — schema v2 (añade subtasks + subtasksDone).
-  // shouldDeleteIfMigrationNeeded: false en producción — no borrar datos del usuario.
+  // migrationCallback requerido cuando schemaVersion sube sin borrar datos.
+  // Las RealmList nuevas se inicializan vacías automáticamente para registros v1.
   final config = Configuration.local(
     [TaskObject.schema],
     schemaVersion: 2,
-    shouldDeleteIfMigrationNeeded: false,
+    migrationCallback: (migration, oldSchemaVersion) {
+      // v1 → v2: se añaden subtasks (List<String>) y subtasksDone (List<bool>).
+      // Realm inicializa listas vacías para objetos existentes — sin acción manual.
+    },
   );
   final realm = Realm(config);
   getIt.registerSingleton<Realm>(realm);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/theme/kairos_logo.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -35,14 +36,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ),
   ];
 
-  void _next() {
+  Future<void> _next() async {
     if (_currentPage < _slides.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
     } else {
-      context.go('/login');
+      // Marcar onboarding completado antes de navegar
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('kairos_onboarding_done', true);
+      if (mounted) context.go('/login');
     }
   }
 
