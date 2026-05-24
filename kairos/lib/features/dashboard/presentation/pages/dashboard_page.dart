@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../tasks/presentation/bloc/task_bloc.dart';
@@ -112,6 +113,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   const Spacer(),
                                   GestureDetector(
                                     onTap: () {
+                                      HapticFeedback.lightImpact();
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text('Sin notificaciones nuevas'),
@@ -187,7 +189,10 @@ class _DashboardPageState extends State<DashboardPage> {
                               // AI Optimize CTA
                               const SizedBox(height: AppSpacing.md),
                               GestureDetector(
-                                onTap: () => context.push('/optimize'),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  context.push('/optimize');
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(

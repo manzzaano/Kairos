@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/task_bloc.dart';
@@ -63,6 +64,7 @@ class TaskDetailPage extends StatelessWidget {
                 icon: Icon(Icons.delete_outline,
                     color: kc.danger),
                 onPressed: () {
+                  HapticFeedback.heavyImpact();
                   context
                       .read<TaskBloc>()
                       .add(DeleteTaskRequested(id: task.id));
@@ -121,6 +123,7 @@ class TaskDetailPage extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
+                        HapticFeedback.mediumImpact();
                         context.read<TaskBloc>().add(
                             ToggleTaskRequested(id: task.id));
                         context.pop();
