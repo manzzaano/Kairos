@@ -27,19 +27,18 @@ class _HomeIcon extends _BaseIconPainter {
     final s = size.width / 24;
     canvas.save();
     canvas.scale(s);
+    // Casa: tejado + paredes + hueco de puerta central
     final path = Path()
-      ..moveTo(3, 11)
+      ..moveTo(3, 12)
       ..lineTo(12, 4)
-      ..lineTo(21, 11)
-      ..lineTo(21, 20)
-      ..arcTo(Rect.fromCircle(center: const Offset(19, 22), radius: 2), -1.5708, -1.5708, false)
-      ..lineTo(15, 22)
-      ..lineTo(15, 15)
-      ..lineTo(9, 15)
-      ..lineTo(9, 22)
-      ..lineTo(5, 22)
-      ..arcTo(Rect.fromCircle(center: const Offset(5, 20), radius: 2), 3.1416, -1.5708, false)
-      ..lineTo(3, 11);
+      ..lineTo(21, 12)
+      ..lineTo(21, 21)
+      ..lineTo(15, 21)
+      ..lineTo(15, 14)
+      ..lineTo(9, 14)
+      ..lineTo(9, 21)
+      ..lineTo(3, 21)
+      ..close();
     canvas.drawPath(path, strokePaint);
     canvas.restore();
   }

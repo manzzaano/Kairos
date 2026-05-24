@@ -13,28 +13,37 @@ class FABKairos extends StatefulWidget {
 }
 
 class _FABKairosState extends State<FABKairos>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+    with TickerProviderStateMixin {
+  late final AnimationController _pressCtrl;
+  late final AnimationController _glowCtrl;
   late final Animation<double> _scale;
+  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+    _pressCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 70),
       reverseDuration: const Duration(milliseconds: 300),
       lowerBound: 0,
       upperBound: 1,
     );
-    _scale = Tween<double>(begin: 1.0, end: 0.91).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    _scale = Tween<double>(begin: 1.0, end: 0.90).animate(
+      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut),
     );
+
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _glow = CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut);
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _pressCtrl.dispose();
+    _glowCtrl.dispose();
     super.dispose();
   }
 
@@ -46,36 +55,53 @@ class _FABKairosState extends State<FABKairos>
       button: true,
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.lightImpact();
+          HapticFeedback.mediumImpact();
           widget.onPressed();
         },
-        onTapDown: (_) => _ctrl.forward(),
-        onTapUp: (_) => _ctrl.reverse(),
-        onTapCancel: () => _ctrl.reverse(),
+        onTapDown: (_) => _pressCtrl.forward(),
+        onTapUp: (_) => _pressCtrl.reverse(),
+        onTapCancel: () => _pressCtrl.reverse(),
         child: ScaleTransition(
           scale: _scale,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: kc.accent,
-              borderRadius: BorderRadius.circular(AppShapes.fabRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: kc.accent.withValues(alpha: 0.40),
-                  blurRadius: 32,
-                  offset: const Offset(0, 10),
+          child: AnimatedBuilder(
+            animation: _glow,
+            builder: (_, child) {
+              final g = _glow.value;
+              return Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      kc.accent,
+                      kc.accent.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppShapes.fabRadius),
+                  boxShadow: [
+                    // Glow pulsante externo
+                    BoxShadow(
+                      color: kc.accent.withValues(alpha: 0.30 + g * 0.20),
+                      blurRadius: 24 + g * 16,
+                      spreadRadius: g * 2,
+                      offset: const Offset(0, 8),
+                    ),
+                    // Sombra base
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.30),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-                BoxShadow(
-                  color: kc.accent.withValues(alpha: 0.50),
-                  blurRadius: 0,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
+                child: child,
+              );
+            },
             child: Icon(
               widget.icon,
-              color: const Color(0xFF1A0A00),
+              color: Colors.black.withValues(alpha: 0.85),
               size: 26,
             ),
           ),

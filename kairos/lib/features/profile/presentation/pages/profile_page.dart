@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -61,21 +63,43 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Perfil',
-                style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.7)),
+            // Header con borde izquierdo accent
+            Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [kc.accent, kc.accent.withValues(alpha: 0.3)],
+                    ),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('Perfil',
+                    style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.7)),
+              ],
+            )
+            .animate()
+            .fadeIn(duration: 350.ms)
+            .slideY(begin: -0.08, curve: Curves.easeOut),
             const SizedBox(height: 24),
 
+            // User card con avatar mejorado + glow ring
             SolidCard(
               padding: const EdgeInsets.all(18),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: Row(
                 children: [
+                  // Avatar con ring de gradiente
                   Container(
-                    width: 56,
-                    height: 56,
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       gradient: isGuest
                           ? const LinearGradient(
@@ -83,20 +107,47 @@ class ProfilePage extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             )
-                          : const LinearGradient(
-                              colors: [Color(0xFFFB923C), Color(0xFFC2410C)],
+                          : LinearGradient(
+                              colors: [kc.accent, kc.accent.withValues(alpha: 0.5)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: isGuest
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: kc.accent.withValues(alpha: 0.30),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ],
                     ),
-                    child: Center(
-                      child: Text(
-                        isGuest ? '?' : _initials(userEmail),
-                        style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A0A00)),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: isGuest
+                            ? const LinearGradient(
+                                colors: [Color(0xFF6B7280), Color(0xFF374151)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : LinearGradient(
+                                colors: [kc.accent, kc.accent.withValues(alpha: 0.70)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Center(
+                        child: Text(
+                          isGuest ? '?' : _initials(userEmail),
+                          style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A0A00)),
+                        ),
                       ),
                     ),
                   ),
@@ -111,11 +162,34 @@ class ProfilePage extends StatelessWidget {
                               fontSize: 15, fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isGuest ? 'Sin sincronización en la nube' : 'Cuenta sincronizada',
-                          style: AppTypography.mono11.copyWith(
-                              color: isGuest ? kc.warning : kc.success),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isGuest ? kc.warning : kc.success,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (isGuest ? kc.warning : kc.success)
+                                        .withValues(alpha: 0.5),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isGuest
+                                  ? 'Sin sincronización en la nube'
+                                  : 'Cuenta sincronizada',
+                              style: AppTypography.mono11.copyWith(
+                                  color: isGuest ? kc.warning : kc.success),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -128,6 +202,7 @@ class ProfilePage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: kc.accent.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: kc.accent.withValues(alpha: 0.3)),
                         ),
                         child: Text('Entrar',
                             style: AppTypography.caption12.copyWith(
@@ -136,7 +211,10 @@ class ProfilePage extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
+            )
+            .animate()
+            .fadeIn(delay: 80.ms, duration: 400.ms)
+            .slideY(begin: 0.08, curve: Curves.easeOut),
             const SizedBox(height: 24),
 
             // ── XP / Karma section ──────────────────────────────────────────
@@ -151,7 +229,6 @@ class ProfilePage extends StatelessWidget {
                 final progress = XpCalculator.levelProgress(xp);
                 final toNext = XpCalculator.xpToNext(xp);
 
-                // Streak calculation
                 int streak = 0;
                 if (state is TaskLoaded) {
                   DateTime check = DateTime(DateTime.now().year,
@@ -165,58 +242,54 @@ class ProfilePage extends StatelessWidget {
                             check);
                     if (!hasAny) break;
                     streak++;
-                    check =
-                        check.subtract(const Duration(days: 1));
+                    check = check.subtract(const Duration(days: 1));
                   }
                 }
-                final karmaLabel =
-                    XpCalculator.karmaLabel(tasks, streak);
+                final karmaLabel = XpCalculator.karmaLabel(tasks, streak);
 
                 return SolidCard(
                   padding: const EdgeInsets.all(18),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          // Level badge
+                          // Level badge mejorado
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: kc.accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
+                              gradient: LinearGradient(
+                                colors: [
+                                  kc.accent.withValues(alpha: 0.20),
+                                  kc.accent.withValues(alpha: 0.08),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: kc.accent
-                                      .withValues(alpha: 0.35)),
+                                  color: kc.accent.withValues(alpha: 0.40)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.bolt,
-                                    color: kc.accent, size: 14),
+                                Icon(Icons.bolt, color: kc.accent, size: 14),
                                 const SizedBox(width: 4),
                                 Text('NV $lvl',
-                                    style: AppTypography.mono11
-                                        .copyWith(
-                                            color: kc.accent,
-                                            fontWeight:
-                                                FontWeight.w700)),
+                                    style: AppTypography.mono11.copyWith(
+                                        color: kc.accent,
+                                        fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(lvlName,
-                                    style: AppTypography.body13
-                                        .copyWith(
-                                            fontWeight:
-                                                FontWeight.w600)),
+                                    style: AppTypography.body13.copyWith(
+                                        fontWeight: FontWeight.w600)),
                                 Text('$xp XP · faltan $toNext para NV ${lvl + 1}',
                                     style: AppTypography.mono11
                                         .copyWith(color: kc.text3)),
@@ -225,26 +298,50 @@ class ProfilePage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(99),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: kc.bg3,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              kc.accent),
-                          minHeight: 6,
-                        ),
+                      const SizedBox(height: 14),
+                      // Progress bar con gradiente
+                      Stack(
+                        children: [
+                          Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: progress.clamp(0.0, 1.0),
+                            child: Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [kc.accent, kc.accent.withValues(alpha: 0.7)],
+                                ),
+                                borderRadius: BorderRadius.circular(99),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: kc.accent.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Text(karmaLabel,
-                          style: AppTypography.caption12
-                              .copyWith(color: kc.text2)),
+                          style: AppTypography.caption12.copyWith(color: kc.text2)),
                     ],
                   ),
                 );
               },
-            ),
+            )
+            .animate()
+            .fadeIn(delay: 160.ms, duration: 400.ms)
+            .slideY(begin: 0.08, curve: Curves.easeOut),
             const SizedBox(height: 24),
 
             const _SectionHeader('SINCRONIZACIÓN'),
@@ -401,22 +498,29 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 24),
 
             if (!isGuest)
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await Supabase.instance.client.auth.signOut();
-                    if (context.mounted) context.go('/login');
-                  },
-                  icon: const Icon(Icons.logout, size: 18),
-                  label: const Text('Cerrar sesión'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: kc.danger,
-                    side: BorderSide(color: kc.line),
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppShapes.btnRadius)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppShapes.btnRadius),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Supabase.instance.client.auth.signOut();
+                        if (context.mounted) context.go('/login');
+                      },
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('Cerrar sesión'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kc.danger,
+                        backgroundColor: kc.danger.withValues(alpha: 0.06),
+                        side: BorderSide(color: kc.danger.withValues(alpha: 0.35)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppShapes.btnRadius)),
+                      ),
+                    ),
                   ),
                 ),
               )
@@ -424,16 +528,34 @@ class ProfilePage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/login'),
-                  icon: const Icon(Icons.login, size: 18),
-                  label: const Text('Iniciar sesión'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kc.accent,
-                    foregroundColor: const Color(0xFF1A0A00),
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppShapes.btnRadius)),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [kc.accent, kc.accent.withValues(alpha: 0.75)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppShapes.btnRadius),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kc.accent.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/login'),
+                    icon: const Icon(Icons.login, size: 18),
+                    label: const Text('Iniciar sesión'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: const Color(0xFF1A0A00),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppShapes.btnRadius)),
+                    ),
                   ),
                 ),
               ),
@@ -460,12 +582,26 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final kc = context.kc;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(text,
-          style: AppTypography.mono11.copyWith(
-              color: context.kc.text3,
-              letterSpacing: 1.1)),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 12,
+            decoration: BoxDecoration(
+              color: kc.accent.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(text,
+              style: AppTypography.mono11.copyWith(
+                  color: kc.text3,
+                  letterSpacing: 1.1)),
+        ],
+      ),
     );
   }
 }
