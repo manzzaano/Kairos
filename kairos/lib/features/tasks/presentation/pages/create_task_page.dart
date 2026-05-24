@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/entities/task.dart';
@@ -38,9 +39,11 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
   void _save() {
     if (_titleCtrl.text.trim().isEmpty) {
+      HapticFeedback.heavyImpact();
       setState(() => _showTitleError = true);
       return;
     }
+    HapticFeedback.mediumImpact();
     context.read<TaskBloc>().add(CreateTaskRequested(TaskParams(
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim().isEmpty
@@ -133,58 +136,12 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 style: AppTypography.caption12
                     .copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: Priority.values.map((p) {
-                final selected = p == _priority;
-                final color = p == Priority.high
-                    ? kc.danger
-                    : p == Priority.medium
-                        ? kc.accent
-                        : kc.text3;
-                final label = p == Priority.high
-                    ? 'Alta'
-                    : p == Priority.medium
-                        ? 'Media'
-                        : 'Baja';
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _priority = p),
-                    child: Container(
-                      margin: EdgeInsets.only(
-                          right: p != Priority.low ? 8 : 0),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? color.withValues(alpha: 0.15)
-                            : kc.bg2,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: selected ? color : kc.line),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: selected ? color : color.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(label,
-                              textAlign: TextAlign.center,
-                              style: AppTypography.body13.copyWith(
-                                  color: selected ? color : kc.text2,
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+            _PrioritySegment(
+              value: _priority,
+              onChanged: (p) {
+                HapticFeedback.selectionClick();
+                setState(() => _priority = p);
+              },
             ),
             const SizedBox(height: AppSpacing.xxl),
 
@@ -222,8 +179,10 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 final selected =
                     _dueLabel == (d == 'Sin fecha' ? null : d);
                 return GestureDetector(
-                  onTap: () => setState(() =>
-                      _dueLabel = d == 'Sin fecha' ? null : d),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _dueLabel = d == 'Sin fecha' ? null : d);
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
@@ -253,8 +212,10 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               children: _projects.map((p) {
                 final selected = _project == p;
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _project = p),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _project = p);
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
@@ -319,6 +280,82 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PrioritySegment extends StatelessWidget {
+  final Priority value;
+  final ValueChanged<Priority> onChanged;
+  const _PrioritySegment({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final kc = context.kc;
+    return Container(
+      decoration: BoxDecoration(
+        color: kc.bg2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kc.line),
+      ),
+      child: Row(
+        children: Priority.values.map((p) {
+          final selected = p == value;
+          final color = p == Priority.high
+              ? kc.danger
+              : p == Priority.medium
+                  ? kc.accent
+                  : kc.text3;
+          final label = p == Priority.high
+              ? 'Alta'
+              : p == Priority.medium
+                  ? 'Media'
+                  : 'Baja';
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(p),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                margin: const EdgeInsets.all(3),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? color.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: selected
+                      ? Border.all(color: color.withValues(alpha: 0.4))
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selected
+                            ? color
+                            : color.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: AppTypography.body13.copyWith(
+                        color: selected ? color : kc.text2,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

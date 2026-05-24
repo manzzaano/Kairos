@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../shared/widgets/kairos_icons.dart';
@@ -30,6 +31,7 @@ class AppShell extends StatelessWidget {
         currentIndex: navigationShell.currentIndex,
         onTap: (i) {
           if (i != navigationShell.currentIndex) {
+            HapticFeedback.selectionClick();
             navigationShell.goBranch(i, initialLocation: true);
           }
         },
@@ -54,23 +56,31 @@ class _KairosTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(99),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0x66000000),
+              color: isDark
+                  ? const Color(0x99000000)
+                  : const Color(0xCCFFFFFF),
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: const Color(0x26FFFFFF)),
-              boxShadow: const [
+              border: Border.all(
+                color: isDark
+                    ? const Color(0x26FFFFFF)
+                    : const Color(0x1A000000),
+              ),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 32,
-                  offset: Offset(0, 8),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                  blurRadius: 40,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -84,47 +94,51 @@ class _KairosTabBar extends StatelessWidget {
                   selected: active,
                   button: true,
                   child: GestureDetector(
-                  onTap: () => onTap(i),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    decoration: active
-                        ? BoxDecoration(
-                            color: const Color(0x14FFFFFF),
-                            borderRadius: BorderRadius.circular(99),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x1AFFFFFF),
-                                blurRadius: 1,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          )
-                        : null,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _tabIcon(
-                          type,
-                          color: active ? kc.text : kc.text3,
-                          sw: active ? 1.8 : 1.5,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: active ? kc.text : kc.text3,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
+                    onTap: () => onTap(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 6, horizontal: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedScale(
+                            scale: active ? 1.08 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            child: _tabIcon(
+                              type,
+                              color: active ? kc.accent : kc.text3,
+                              sw: active ? 1.8 : 1.4,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: active ? kc.accent : kc.text3,
+                              fontWeight: active
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          // Active dot indicator
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOut,
+                            width: active ? 4 : 0,
+                            height: active ? 4 : 0,
+                            decoration: BoxDecoration(
+                              color: kc.accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   ),
                 );
               }),
@@ -135,7 +149,8 @@ class _KairosTabBar extends StatelessWidget {
     );
   }
 
-  static Widget _tabIcon(_Tab type, {required Color color, required double sw}) {
+  static Widget _tabIcon(_Tab type,
+      {required Color color, required double sw}) {
     return switch (type) {
       _Tab.home => KairosIcon.home(color: color, sw: sw),
       _Tab.list => KairosIcon.list(color: color, sw: sw),
