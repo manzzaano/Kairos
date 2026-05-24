@@ -13,7 +13,9 @@ import '../../../../core/constants/app_shapes.dart';
 import '../../../../shared/widgets/fab_kairos.dart';
 import '../../../../shared/widgets/task_card.dart';
 
-enum _Filter { all, pending, done, high }
+enum _Filter { all, today, pending, done, high }
+
+enum _Sort { date, priority, energy }
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -23,6 +25,10 @@ class TaskListPage extends StatefulWidget {
 
 class _TaskListPageState extends State<TaskListPage> {
   _Filter _filter = _Filter.all;
+  _Sort _sort = _Sort.date;
+  String _search = '';
+  bool _showSearch = false;
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -30,17 +36,124 @@ class _TaskListPageState extends State<TaskListPage> {
     context.read<TaskBloc>().add(const LoadTasksRequested());
   }
 
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   List<Task> _filtered(List<Task> tasks) {
-    switch (_filter) {
-      case _Filter.pending:
-        return tasks.where((t) => !t.isDone).toList();
-      case _Filter.done:
-        return tasks.where((t) => t.isDone).toList();
-      case _Filter.high:
-        return tasks.where((t) => t.priority == Priority.high).toList();
-      case _Filter.all:
-        return tasks;
+    var r = tasks.toList();
+
+    // Search
+    if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
+      r = r
+          .where((t) =>
+              t.title.toLowerCase().contains(q) ||
+              (t.description?.toLowerCase().contains(q) ?? false) ||
+              t.project.toLowerCase().contains(q))
+          .toList();
     }
+
+    // Category filter
+    switch (_filter) {
+      case _Filter.today:
+        r = r.where((t) => !t.isDone && t.dueLabel == 'Hoy').toList();
+        break;
+      case _Filter.pending:
+        r = r.where((t) => !t.isDone).toList();
+        break;
+      case _Filter.done:
+        r = r.where((t) => t.isDone).toList();
+        break;
+      case _Filter.high:
+        r = r.where((t) => t.priority == Priority.high).toList();
+        break;
+      case _Filter.all:
+        break;
+    }
+
+    // Sort
+    switch (_sort) {
+      case _Sort.priority:
+        r.sort((a, b) => a.priority.index.compareTo(b.priority.index));
+        break;
+      case _Sort.energy:
+        r.sort((a, b) => b.energyLevel.compareTo(a.energyLevel));
+        break;
+      case _Sort.date:
+        break;
+    }
+
+    return r;
+  }
+
+  void _showSortSheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final kc = context.kc;
+        return Container(
+          margin: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: kc.bg2,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kc.line2,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text('Ordenar por',
+                    style: AppTypography.heading18),
+              ),
+              const SizedBox(height: 12),
+              ...[
+                (_Sort.date, 'Fecha de creación', Icons.calendar_today_outlined),
+                (_Sort.priority, 'Prioridad (alta primero)', Icons.flag_outlined),
+                (_Sort.energy, 'Energía (mayor primero)', Icons.bolt_outlined),
+              ].map((item) {
+                final (sort, label, icon) = item;
+                final selected = _sort == sort;
+                return ListTile(
+                  leading: Icon(icon,
+                      color: selected ? kc.accent : kc.text2,
+                      size: 20),
+                  title: Text(label,
+                      style: AppTypography.body13.copyWith(
+                          color: selected ? kc.accent : kc.text,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400)),
+                  trailing: selected
+                      ? Icon(Icons.check, color: kc.accent, size: 18)
+                      : null,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _sort = sort);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -52,8 +165,9 @@ class _TaskListPageState extends State<TaskListPage> {
         children: [
           BlocBuilder<TaskBloc, TaskState>(
             builder: (context, state) {
-              final tasks =
-                  state is TaskLoaded ? _filtered(state.tasks) : <Task>[];
+              final tasks = state is TaskLoaded
+                  ? _filtered(state.tasks)
+                  : <Task>[];
               final total =
                   state is TaskLoaded ? state.tasks.length : 0;
 
@@ -66,14 +180,147 @@ class _TaskListPageState extends State<TaskListPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Todas las tareas',
-                            style: AppTypography.heading28),
-                        const SizedBox(height: 4),
-                        Text(
-                            '$total en total · desliza para acción rápida',
-                            style: AppTypography.body13
-                                .copyWith(color: kc.text2)),
+                        // Title row + sort + search toggle
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text('Todas las tareas',
+                                      style: AppTypography.heading28),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$total en total · desliza para acción rápida',
+                                    style: AppTypography.body13
+                                        .copyWith(color: kc.text2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Sort button
+                            GestureDetector(
+                              onTap: _showSortSheet,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: _sort != _Sort.date
+                                      ? kc.accentSoft
+                                      : kc.bg2,
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: _sort != _Sort.date
+                                          ? kc.accent
+                                          : kc.line),
+                                ),
+                                child: Icon(Icons.sort,
+                                    color: _sort != _Sort.date
+                                        ? kc.accent
+                                        : kc.text2,
+                                    size: 18),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Search toggle
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _showSearch = !_showSearch;
+                                  if (!_showSearch) {
+                                    _search = '';
+                                    _searchCtrl.clear();
+                                  }
+                                });
+                              },
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: _showSearch
+                                      ? kc.accentSoft
+                                      : kc.bg2,
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: _showSearch
+                                          ? kc.accent
+                                          : kc.line),
+                                ),
+                                child: Icon(Icons.search,
+                                    color: _showSearch
+                                        ? kc.accent
+                                        : kc.text2,
+                                    size: 18),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Search bar — animated
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          child: _showSearch
+                              ? Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: AppSpacing.md),
+                                  child: TextField(
+                                    controller: _searchCtrl,
+                                    autofocus: true,
+                                    style: AppTypography.body13,
+                                    onChanged: (v) =>
+                                        setState(() => _search = v),
+                                    decoration: InputDecoration(
+                                      hintText: 'Buscar tareas...',
+                                      hintStyle: AppTypography.body13
+                                          .copyWith(color: kc.text3),
+                                      prefixIcon: Icon(Icons.search,
+                                          color: kc.text3, size: 18),
+                                      suffixIcon: _search.isNotEmpty
+                                          ? GestureDetector(
+                                              onTap: () => setState(() {
+                                                _search = '';
+                                                _searchCtrl.clear();
+                                              }),
+                                              child: Icon(Icons.close,
+                                                  color: kc.text3,
+                                                  size: 16),
+                                            )
+                                          : null,
+                                      filled: true,
+                                      fillColor: kc.bg2,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 10),
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          borderSide:
+                                              BorderSide(color: kc.line)),
+                                      enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          borderSide:
+                                              BorderSide(color: kc.line)),
+                                      focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          borderSide: BorderSide(
+                                              color: kc.accent)),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+
                         const SizedBox(height: AppSpacing.lg),
+
+                        // Filter chips
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -83,6 +330,12 @@ class _TaskListPageState extends State<TaskListPage> {
                                   active: _filter == _Filter.all,
                                   onTap: () => setState(
                                       () => _filter = _Filter.all)),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                  label: 'Hoy',
+                                  active: _filter == _Filter.today,
+                                  onTap: () => setState(
+                                      () => _filter = _Filter.today)),
                               const SizedBox(width: 8),
                               _FilterChip(
                                   label: 'Pendientes',
@@ -121,21 +374,31 @@ class _TaskListPageState extends State<TaskListPage> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check_circle_outline,
-                                  color: kc.text3, size: 48),
+                              Icon(
+                                _search.isNotEmpty
+                                    ? Icons.search_off
+                                    : Icons.check_circle_outline,
+                                color: kc.text3,
+                                size: 48,
+                              ),
                               const SizedBox(height: 16),
                               Text(
-                                _filter == _Filter.all
-                                    ? 'Crea tu primera tarea'
-                                    : 'No hay tareas en esta categoría',
+                                _search.isNotEmpty
+                                    ? 'Sin resultados para "$_search"'
+                                    : _filter == _Filter.all
+                                        ? 'Crea tu primera tarea'
+                                        : 'No hay tareas en esta categoría',
                                 style: AppTypography.body14
                                     .copyWith(color: kc.text2),
+                                textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                _filter == _Filter.all
-                                    ? 'Toca + para empezar'
-                                    : 'Cambia el filtro para ver otras',
+                                _search.isNotEmpty
+                                    ? 'Prueba con otras palabras'
+                                    : _filter == _Filter.all
+                                        ? 'Toca + para empezar'
+                                        : 'Cambia el filtro para ver otras',
                                 style: AppTypography.caption12
                                     .copyWith(color: kc.text3),
                               ),
@@ -255,7 +518,8 @@ class _SwipeableTaskRow extends StatelessWidget {
         child: TaskCard(
           task: task,
           onTap: () => context.push('/task/${task.id}'),
-          onToggle: () => context.read<TaskBloc>().add(ToggleTaskRequested(id: task.id)),
+          onToggle: () =>
+              context.read<TaskBloc>().add(ToggleTaskRequested(id: task.id)),
         ),
       ),
     );
@@ -267,9 +531,7 @@ class _FilterChip extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
   const _FilterChip(
-      {required this.label,
-      required this.active,
-      required this.onTap});
+      {required this.label, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

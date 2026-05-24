@@ -17,4 +17,6 @@ class _TaskObject {
   late String project;
   late DateTime? completedAt;
   late DateTime? createdAt;
+  late List<String> subtasks;     // subtarea títulos
+  late List<bool> subtasksDone;   // estado completado por índice
 }

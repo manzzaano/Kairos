@@ -18,11 +18,13 @@ class CreateTaskPage extends StatefulWidget {
 class _CreateTaskPageState extends State<CreateTaskPage> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _subtaskCtrl = TextEditingController();
   Priority _priority = Priority.medium;
   int _energy = 3;
   String? _dueLabel = 'Hoy';
   String _project = 'Personal';
   bool _showTitleError = false;
+  final List<String> _subtasks = [];
 
   static const _energyLabels = [
     '', 'Mínima', 'Ligera', 'Media', 'Alta', 'Extrema'
@@ -34,7 +36,23 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
+    _subtaskCtrl.dispose();
     super.dispose();
+  }
+
+  void _addSubtask() {
+    final text = _subtaskCtrl.text.trim();
+    if (text.isEmpty) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _subtasks.add(text);
+      _subtaskCtrl.clear();
+    });
+  }
+
+  void _removeSubtask(int index) {
+    HapticFeedback.lightImpact();
+    setState(() => _subtasks.removeAt(index));
   }
 
   void _save() {
@@ -53,6 +71,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
       energyLevel: _energy,
       dueLabel: _dueLabel,
       project: _project,
+      subtasks: List.from(_subtasks),
     )));
     context.pop();
   }
@@ -86,7 +105,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xxl),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xxl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -95,7 +115,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               controller: _titleCtrl,
               autofocus: true,
               onChanged: (_) => setState(() => _showTitleError = false),
-              style: AppTypography.heading22.copyWith(fontWeight: FontWeight.w500),
+              style: AppTypography.heading22
+                  .copyWith(fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: '¿Qué tienes en mente?',
                 hintStyle: AppTypography.heading22.copyWith(
@@ -104,19 +125,23 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                errorText: _showTitleError ? 'El título es obligatorio' : null,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 8),
+                errorText:
+                    _showTitleError ? 'El título es obligatorio' : null,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+
+            // Descripción
             TextField(
               controller: _descCtrl,
               maxLines: 3,
               style: AppTypography.body13,
               decoration: InputDecoration(
                 hintText: 'Descripción (opcional)',
-                hintStyle: AppTypography.body13
-                    .copyWith(color: kc.text3),
+                hintStyle:
+                    AppTypography.body13.copyWith(color: kc.text3),
                 filled: true,
                 fillColor: kc.bg2,
                 border: OutlineInputBorder(
@@ -125,16 +150,15 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: kc.line)),
-                contentPadding:
-                    const EdgeInsets.all(AppSpacing.lg),
+                contentPadding: const EdgeInsets.all(AppSpacing.lg),
               ),
             ),
             const SizedBox(height: AppSpacing.xxl),
 
             // Prioridad
             Text('Prioridad',
-                style: AppTypography.caption12
-                    .copyWith(color: kc.text2)),
+                style:
+                    AppTypography.caption12.copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
             _PrioritySegment(
               value: _priority,
@@ -153,8 +177,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                     style: AppTypography.caption12
                         .copyWith(color: kc.text2)),
                 Text('E$_energy · ${_energyLabels[_energy]}',
-                    style: AppTypography.mono11
-                        .copyWith(color: kc.accent)),
+                    style:
+                        AppTypography.mono11.copyWith(color: kc.accent)),
               ],
             ),
             Slider(
@@ -170,8 +194,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
             // Fecha
             Text('Fecha',
-                style: AppTypography.caption12
-                    .copyWith(color: kc.text2)),
+                style:
+                    AppTypography.caption12.copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: 8,
@@ -181,7 +205,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 return GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    setState(() => _dueLabel = d == 'Sin fecha' ? null : d);
+                    setState(() =>
+                        _dueLabel = d == 'Sin fecha' ? null : d);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -194,7 +219,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                     ),
                     child: Text(d,
                         style: AppTypography.caption12.copyWith(
-                            color: selected ? kc.accent : kc.text2)),
+                            color:
+                                selected ? kc.accent : kc.text2)),
                   ),
                 );
               }).toList(),
@@ -203,8 +229,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
             // Proyecto
             Text('Proyecto',
-                style: AppTypography.caption12
-                    .copyWith(color: kc.text2)),
+                style:
+                    AppTypography.caption12.copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: 8,
@@ -220,23 +246,115 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: selected
-                          ? kc.accentSoft
-                          : kc.bg2,
+                      color: selected ? kc.accentSoft : kc.bg2,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: selected
-                              ? kc.accent
-                              : kc.line),
+                          color: selected ? kc.accent : kc.line),
                     ),
                     child: Text(p,
                         style: AppTypography.caption12.copyWith(
-                            color: selected
-                                ? kc.accent
-                                : kc.text2)),
+                            color: selected ? kc.accent : kc.text2)),
                   ),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+
+            // Subtareas
+            Row(
+              children: [
+                Text('Subtareas',
+                    style: AppTypography.caption12
+                        .copyWith(color: kc.text2)),
+                if (_subtasks.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Text('${_subtasks.length}',
+                      style: AppTypography.mono11
+                          .copyWith(color: kc.accent)),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            // Subtask list
+            if (_subtasks.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: kc.bg2,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: kc.line),
+                ),
+                child: Column(
+                  children: List.generate(_subtasks.length, (i) {
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              Icon(Icons.drag_handle,
+                                  color: kc.text4, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(_subtasks[i],
+                                    style: AppTypography.body13),
+                              ),
+                              GestureDetector(
+                                onTap: () => _removeSubtask(i),
+                                child: Icon(Icons.close,
+                                    color: kc.text3, size: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (i < _subtasks.length - 1)
+                          Divider(color: kc.line, height: 1),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            // Add subtask input
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _subtaskCtrl,
+                    style: AppTypography.body13,
+                    onSubmitted: (_) => _addSubtask(),
+                    decoration: InputDecoration(
+                      hintText: 'Añadir subtarea...',
+                      hintStyle: AppTypography.body13
+                          .copyWith(color: kc.text3),
+                      filled: true,
+                      fillColor: kc.bg2,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: kc.line)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: kc.line)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _addSubtask,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: kc.accent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.add,
+                        color: const Color(0xFF1A0A00), size: 20),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.xxl),
 
@@ -319,14 +437,16 @@ class _PrioritySegment extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 margin: const EdgeInsets.all(3),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: selected
                       ? color.withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: selected
-                      ? Border.all(color: color.withValues(alpha: 0.4))
+                      ? Border.all(
+                          color: color.withValues(alpha: 0.4))
                       : null,
                 ),
                 child: Row(

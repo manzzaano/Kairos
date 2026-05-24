@@ -15,9 +15,7 @@ class TaskRepositoryImpl implements ITaskRepository {
       final tasks = await realmDataSource.getTasks(todayOnly: todayOnly);
       return Right(tasks);
     } catch (e) {
-      return Left(
-        CacheFailure('Failed to get tasks: ${e.toString()}'),
-      );
+      return Left(CacheFailure('Failed to get tasks: ${e.toString()}'));
     }
   }
 
@@ -27,9 +25,7 @@ class TaskRepositoryImpl implements ITaskRepository {
       final task = await realmDataSource.createTask(params);
       return Right(task);
     } catch (e) {
-      return Left(
-        CacheFailure('Failed to create task: ${e.toString()}'),
-      );
+      return Left(CacheFailure('Failed to create task: ${e.toString()}'));
     }
   }
 
@@ -39,9 +35,7 @@ class TaskRepositoryImpl implements ITaskRepository {
       final task = await realmDataSource.toggleTask(id);
       return Right(task);
     } catch (e) {
-      return Left(
-        CacheFailure('Failed to toggle task: ${e.toString()}'),
-      );
+      return Left(CacheFailure('Failed to toggle task: ${e.toString()}'));
     }
   }
 
@@ -51,9 +45,18 @@ class TaskRepositoryImpl implements ITaskRepository {
       await realmDataSource.deleteTask(id);
       return const Right(null);
     } catch (e) {
-      return Left(
-        CacheFailure('Failed to delete task: ${e.toString()}'),
-      );
+      return Left(CacheFailure('Failed to delete task: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Task>> toggleSubtask(
+      String taskId, int subtaskIndex) async {
+    try {
+      final task = await realmDataSource.toggleSubtask(taskId, subtaskIndex);
+      return Right(task);
+    } catch (e) {
+      return Left(CacheFailure('Failed to toggle subtask: ${e.toString()}'));
     }
   }
 }

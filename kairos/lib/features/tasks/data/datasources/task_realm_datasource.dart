@@ -7,6 +7,7 @@ abstract class TaskRealmDataSource {
   Future<Task> createTask(TaskParams params);
   Future<Task> toggleTask(String id);
   Future<void> deleteTask(String id);
+  Future<Task> toggleSubtask(String taskId, int subtaskIndex);
 }
 
 class TaskRealmDataSourceImpl implements TaskRealmDataSource {
@@ -39,6 +40,8 @@ class TaskRealmDataSourceImpl implements TaskRealmDataSource {
         description: params.description,
         dueLabel: params.dueLabel ?? 'Hoy',
         createdAt: DateTime.now().toUtc(),
+        subtasks: params.subtasks,
+        subtasksDone: List.filled(params.subtasks.length, false),
       );
       realm.write(() => realm.add(taskObject));
       return taskObject.toEntity();
@@ -74,6 +77,25 @@ class TaskRealmDataSourceImpl implements TaskRealmDataSource {
       throw Exception('Failed to delete task: $e');
     }
   }
+
+  @override
+  Future<Task> toggleSubtask(String taskId, int subtaskIndex) async {
+    try {
+      final objectId = ObjectId.fromHexString(taskId);
+      final taskObject = realm.find<TaskObject>(objectId);
+      if (taskObject == null) throw Exception('Task not found');
+      if (subtaskIndex < 0 || subtaskIndex >= taskObject.subtasksDone.length) {
+        throw Exception('Subtask index out of range');
+      }
+      realm.write(() {
+        taskObject.subtasksDone[subtaskIndex] =
+            !taskObject.subtasksDone[subtaskIndex];
+      });
+      return taskObject.toEntity();
+    } catch (e) {
+      throw Exception('Failed to toggle subtask: $e');
+    }
+  }
 }
 
 extension TaskObjectExtension on TaskObject {
@@ -91,5 +113,7 @@ extension TaskObjectExtension on TaskObject {
         project: project,
         completedAt: completedAt,
         createdAt: createdAt,
+        subtasks: subtasks.toList(),
+        subtasksDone: subtasksDone.toList(),
       );
 }

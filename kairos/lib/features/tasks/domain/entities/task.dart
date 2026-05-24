@@ -15,6 +15,8 @@ class Task extends Equatable {
   final String project;
   final DateTime? completedAt;
   final DateTime? createdAt;
+  final List<String> subtasks;
+  final List<bool> subtasksDone;
 
   const Task({
     required this.id,
@@ -29,10 +31,12 @@ class Task extends Equatable {
     this.project = 'Personal',
     this.completedAt,
     this.createdAt,
+    this.subtasks = const [],
+    this.subtasksDone = const [],
   });
 
   @override
-  List<Object?> get props => [id, title, isDone, isSynced, completedAt];
+  List<Object?> get props => [id, title, isDone, isSynced, completedAt, subtasksDone];
 }
 
 class TaskParams extends Equatable {
@@ -43,6 +47,7 @@ class TaskParams extends Equatable {
   final String? dueLabel;
   final int estimateMinutes;
   final String? project;
+  final List<String> subtasks;
 
   const TaskParams({
     required this.title,
@@ -52,10 +57,11 @@ class TaskParams extends Equatable {
     this.dueLabel = 'Hoy',
     this.estimateMinutes = 30,
     this.project,
+    this.subtasks = const [],
   });
 
   @override
-  List<Object?> get props => [title, priority, energyLevel];
+  List<Object?> get props => [title, priority, energyLevel, subtasks];
 }
 
 class GetTasksParams extends Equatable {

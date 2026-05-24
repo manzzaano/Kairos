@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/xp_calculator.dart';
 import '../../../tasks/presentation/bloc/task_bloc.dart';
 import '../../../tasks/presentation/bloc/task_event.dart';
 import '../../../tasks/presentation/bloc/task_state.dart';
@@ -138,6 +139,25 @@ class _DashboardPageState extends State<DashboardPage> {
                               // Greeting below date
                               Text(_greeting(),
                                   style: AppTypography.heading28),
+                              const SizedBox(height: 6),
+                              // XP badge inline
+                              Builder(builder: (ctx) {
+                                final xp = XpCalculator.totalXp(tasks);
+                                final lvl = XpCalculator.level(xp);
+                                final lvlName = XpCalculator.levelName(lvl);
+                                return Row(
+                                  children: [
+                                    Icon(Icons.bolt,
+                                        color: kc.accent, size: 13),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Nivel $lvl · $lvlName · $xp XP',
+                                      style: AppTypography.mono11
+                                          .copyWith(color: kc.accent),
+                                    ),
+                                  ],
+                                );
+                              }),
                               const SizedBox(height: AppSpacing.xxl),
 
                               // Energy card — SolidCard with radius 14

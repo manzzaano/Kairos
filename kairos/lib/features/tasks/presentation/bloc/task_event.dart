@@ -32,3 +32,11 @@ class DeleteTaskRequested extends TaskEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class ToggleSubtaskRequested extends TaskEvent {
+  final String taskId;
+  final int subtaskIndex;
+  const ToggleSubtaskRequested({required this.taskId, required this.subtaskIndex});
+  @override
+  List<Object?> get props => [taskId, subtaskIndex];
+}
