@@ -8,19 +8,22 @@ class PriorityChip extends StatelessWidget {
   static const _chipColors = {
     Priority.high: {
       'bg': Color(0x1FF87171),
-      'fg': Color(0xFFFCA5A5),
+      'fgDark': Color(0xFFFCA5A5),
+      'fgLight': Color(0xFFB91C1C),
       'dot': Color(0xFFF87171),
       'label': 'Alta',
     },
     Priority.medium: {
       'bg': Color(0x1FFB923C),
-      'fg': Color(0xFFFDBA74),
+      'fgDark': Color(0xFFFDBA74),
+      'fgLight': Color(0xFFC2410C),
       'dot': Color(0xFFFB923C),
       'label': 'Media',
     },
     Priority.low: {
       'bg': Color(0x2E737373),
-      'fg': Color(0xFFA3A3A3),
+      'fgDark': Color(0xFFA3A3A3),
+      'fgLight': Color(0xFF525252),
       'dot': Color(0xFF737373),
       'label': 'Baja',
     },
@@ -29,6 +32,9 @@ class PriorityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = _chipColors[priority]!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? config['fgDark'] as Color : config['fgLight'] as Color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -53,7 +59,7 @@ class PriorityChip extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.22,
-              color: config['fg'] as Color,
+              color: textColor,
             ),
           ),
         ],
