@@ -36,10 +36,14 @@ class _HabitsPageState extends State<HabitsPage> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_prefsKey);
     if (raw != null) {
-      final list = (jsonDecode(raw) as List<dynamic>)
-          .map((j) => Habit.fromJson(j as Map<String, dynamic>))
-          .toList();
-      setState(() => _habits = list);
+      try {
+        final list = (jsonDecode(raw) as List<dynamic>)
+            .map((j) => Habit.fromJson(j as Map<String, dynamic>))
+            .toList();
+        setState(() => _habits = list);
+      } catch (_) {
+        // Datos corruptos — se ignoran y se parte de lista vacía
+      }
     }
     setState(() => _loaded = true);
   }

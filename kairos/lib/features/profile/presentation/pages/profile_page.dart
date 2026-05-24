@@ -25,10 +25,11 @@ class ProfilePage extends StatelessWidget {
   String _initials(String? email) {
     if (email == null || email.isEmpty) return '?';
     final parts = email.split('@').first.split('.');
-    if (parts.length >= 2) {
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return email.substring(0, email.length >= 2 ? 2 : 1).toUpperCase();
+    final local = email.split('@').first;
+    return local.substring(0, local.length >= 2 ? 2 : local.length.clamp(1, 1)).toUpperCase();
   }
 
   static const _accentOptions = [
