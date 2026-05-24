@@ -11,9 +11,9 @@ class ConflictSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F0F),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(

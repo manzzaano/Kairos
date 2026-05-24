@@ -136,20 +136,20 @@ class KairosIcon extends StatelessWidget {
   final double sw;
   final Color? color;
 
-  const KairosIcon.home({double size = 20, double sw = 1.6, Color? color, super.key})
-      : _type = _KairosIconType.home, size = size, sw = sw, color = color;
+  const KairosIcon.home({this.size = 20, this.sw = 1.6, this.color, super.key})
+      : _type = _KairosIconType.home;
 
-  const KairosIcon.list({double size = 20, double sw = 1.6, Color? color, super.key})
-      : _type = _KairosIconType.list, size = size, sw = sw, color = color;
+  const KairosIcon.list({this.size = 20, this.sw = 1.6, this.color, super.key})
+      : _type = _KairosIconType.list;
 
-  const KairosIcon.focus({double size = 20, double sw = 1.6, Color? color, super.key})
-      : _type = _KairosIconType.focus, size = size, sw = sw, color = color;
+  const KairosIcon.focus({this.size = 20, this.sw = 1.6, this.color, super.key})
+      : _type = _KairosIconType.focus;
 
-  const KairosIcon.chart({double size = 20, double sw = 1.6, Color? color, super.key})
-      : _type = _KairosIconType.chart, size = size, sw = sw, color = color;
+  const KairosIcon.chart({this.size = 20, this.sw = 1.6, this.color, super.key})
+      : _type = _KairosIconType.chart;
 
-  const KairosIcon.user({double size = 20, double sw = 1.6, Color? color, super.key})
-      : _type = _KairosIconType.user, size = size, sw = sw, color = color;
+  const KairosIcon.user({this.size = 20, this.sw = 1.6, this.color, super.key})
+      : _type = _KairosIconType.user;
 
   @override
   Widget build(BuildContext context) {

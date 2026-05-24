@@ -6,7 +6,7 @@ class XpCalculator {
   // ── XP por tarea ────────────────────────────────────────────────────────────
   static int _xpForTask(Task task) {
     if (!task.isDone) return 0;
-    final base = 10;
+    const base = 10;
     final priorityBonus = task.priority == Priority.high
         ? 20
         : task.priority == Priority.medium

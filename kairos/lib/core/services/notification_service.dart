@@ -79,7 +79,7 @@ abstract final class NotificationService {
       title,
       body,
       scheduledDate,
-      NotificationDetails(
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -87,7 +87,7 @@ abstract final class NotificationService {
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF6366F1),
+          color: Color(0xFF6366F1),
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

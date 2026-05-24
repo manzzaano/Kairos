@@ -139,8 +139,8 @@ class _HabitsPageState extends State<HabitsPage> {
                         color: kc.accent,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(Icons.add,
-                          color: const Color(0xFF1A0A00), size: 22),
+                      child: const Icon(Icons.add,
+                          color: Color(0xFF1A0A00), size: 22),
                     ),
                   ),
                 ],
@@ -333,7 +333,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('🌱', style: const TextStyle(fontSize: 56)),
+          const Text('🌱', style: TextStyle(fontSize: 56)),
           const SizedBox(height: 16),
           Text('Sin hábitos todavía',
               style: AppTypography.body14

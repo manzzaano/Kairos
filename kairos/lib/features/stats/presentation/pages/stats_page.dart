@@ -214,7 +214,7 @@ class _StatsBody extends StatelessWidget {
                         .copyWith(color: kc.text3)),
                 const SizedBox(height: AppSpacing.md),
                 if (pending.isEmpty && done.isNotEmpty)
-                  _InsightCard(
+                  const _InsightCard(
                       text:
                           '¡Todas tus tareas están completadas! Crea nuevas tareas.')
                 else if (pending.isNotEmpty)
@@ -230,7 +230,7 @@ class _StatsBody extends StatelessWidget {
                       text:
                           'Llevas $streak días consecutivos completando tareas. ¡Sigue así!'),
                 if (tasks.isEmpty)
-                  _InsightCard(
+                  const _InsightCard(
                       text:
                           'Crea tu primera tarea para ver estadísticas reales.'),
                 SizedBox(height: KScreen.bottomPad(context)),

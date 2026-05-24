@@ -8,7 +8,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(const Color(0xFFA0B9D2)),
-        home: KairosBackground(child: const Text('content')),
+        home: const KairosBackground(child: Text('content')),
       ),
     );
     expect(find.text('content'), findsOneWidget);
@@ -18,9 +18,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(const Color(0xFFA0B9D2)),
-        home: KairosBackground(
+        home: const KairosBackground(
           withGlows: true,
-          child: const Text('glow content'),
+          child: Text('glow content'),
         ),
       ),
     );
