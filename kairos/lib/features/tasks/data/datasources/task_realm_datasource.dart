@@ -3,7 +3,7 @@ import '../models/task_object.dart';
 import '../../domain/entities/task.dart';
 
 abstract class TaskRealmDataSource {
-  Future<List<Task>> getTasks({bool todayOnly = false});
+  Future<List<Task>> getTasks();
   Future<Task> createTask(TaskParams params);
   Future<Task> toggleTask(String id);
   Future<void> deleteTask(String id);
@@ -16,7 +16,7 @@ class TaskRealmDataSourceImpl implements TaskRealmDataSource {
   TaskRealmDataSourceImpl(this.realm);
 
   @override
-  Future<List<Task>> getTasks({bool todayOnly = false}) async {
+  Future<List<Task>> getTasks() async {
     try {
       final tasks = realm.all<TaskObject>();
       return tasks.map((obj) => obj.toEntity()).toList();

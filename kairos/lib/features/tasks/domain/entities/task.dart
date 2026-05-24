@@ -65,8 +65,7 @@ class TaskParams extends Equatable {
 }
 
 class GetTasksParams extends Equatable {
-  final bool todayOnly;
-  const GetTasksParams({this.todayOnly = false});
+  const GetTasksParams();
   @override
-  List<Object?> get props => [todayOnly];
+  List<Object?> get props => [];
 }

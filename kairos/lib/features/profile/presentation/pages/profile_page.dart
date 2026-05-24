@@ -395,29 +395,7 @@ class ProfilePage extends StatelessWidget {
             SolidCard(
               padding: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(14),
-              child: Column(
-                children: [
-                  const _NotificationsRow(),
-                  Divider(color: kc.line, height: 1),
-                  _ActionRow(
-                      icon: Icons.privacy_tip_outlined,
-                      label: 'Privacidad y datos',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Política de privacidad disponible próximamente')),
-                        );
-                      }),
-                  Divider(color: kc.line, height: 1),
-                  _ActionRow(
-                      icon: Icons.settings_outlined,
-                      label: 'Ajustes avanzados',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ajustes avanzados disponibles próximamente')),
-                        );
-                      }),
-                ],
-              ),
+              child: const _NotificationsRow(),
             ),
             const SizedBox(height: 24),
 
@@ -462,7 +440,7 @@ class ProfilePage extends StatelessWidget {
 
             Center(
               child: Text(
-                'KAIROS 3.0.0 · BUILD 2026.05.23 · IML',
+                'KAIROS v3.0.0',
                 style: GoogleFonts.jetBrainsMono(
                     fontSize: 10, color: kc.text4),
               ),
@@ -757,33 +735,3 @@ class _SyncActionRow extends StatelessWidget {
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _ActionRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final kc = context.kc;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(icon, color: kc.text2, size: 18),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(child: Text(label, style: AppTypography.body13)),
-            Icon(Icons.chevron_right, color: kc.text3, size: 14),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -6,10 +6,9 @@ abstract class TaskEvent extends Equatable {
 }
 
 class LoadTasksRequested extends TaskEvent {
-  final bool todayOnly;
-  const LoadTasksRequested({this.todayOnly = false});
+  const LoadTasksRequested();
   @override
-  List<Object?> get props => [todayOnly];
+  List<Object?> get props => [];
 }
 
 class CreateTaskRequested extends TaskEvent {
