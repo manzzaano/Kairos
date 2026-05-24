@@ -3,12 +3,55 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../tasks/presentation/bloc/task_bloc.dart';
 import '../../../tasks/presentation/bloc/task_state.dart';
 import '../../../tasks/domain/entities/task.dart';
+import '../../../habits/presentation/pages/habits_page.dart';
 import '../../../../core/theme/kairos_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_spacing.dart';
 
+/// Wrapper que contiene Stats y Hábitos en dos pestañas.
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final kc = context.kc;
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: kc.bg,
+        body: Column(
+          children: [
+            SizedBox(height: MediaQuery.of(context).padding.top + 52),
+            TabBar(
+              labelColor: kc.accent,
+              unselectedLabelColor: kc.text3,
+              indicatorColor: kc.accent,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelStyle: AppTypography.body13.copyWith(
+                  fontWeight: FontWeight.w600),
+              unselectedLabelStyle: AppTypography.body13,
+              tabs: const [
+                Tab(text: 'Estadísticas'),
+                Tab(text: 'Hábitos'),
+              ],
+            ),
+            const Expanded(
+              child: TabBarView(
+                children: [
+                  _StatsBody(),
+                  HabitsPage(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsBody extends StatelessWidget {
+  const _StatsBody();
 
   static DateTime _dayOnly(DateTime d) =>
       DateTime(d.year, d.month, d.day);
@@ -53,9 +96,7 @@ class StatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
-    return Scaffold(
-      backgroundColor: kc.bg,
-      body: BlocBuilder<TaskBloc, TaskState>(
+    return BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           final tasks =
               state is TaskLoaded ? state.tasks : <Task>[];
@@ -75,7 +116,7 @@ class StatsPage extends StatelessWidget {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, 64, AppSpacing.xl, AppSpacing.md),
+                AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -195,8 +236,7 @@ class StatsPage extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 }
 
