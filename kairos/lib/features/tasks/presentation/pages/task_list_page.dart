@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../bloc/task_bloc.dart';
@@ -233,11 +234,18 @@ class _SwipeableTaskRow extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
+      onUpdate: (details) {
+        if (details.reached && !details.previousReached) {
+          HapticFeedback.mediumImpact();
+        }
+      },
       confirmDismiss: (dir) async {
         if (dir == DismissDirection.startToEnd) {
+          HapticFeedback.selectionClick();
           context.read<TaskBloc>().add(ToggleTaskRequested(id: task.id));
           return false;
         } else {
+          HapticFeedback.heavyImpact();
           context.read<TaskBloc>().add(DeleteTaskRequested(id: task.id));
           return true;
         }
@@ -267,8 +275,13 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
         padding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
@@ -278,7 +291,9 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(label,
             style: AppTypography.caption12.copyWith(
-                color: active ? kc.bg : kc.text2)),
+                color: active ? kc.bg : kc.text2,
+                fontWeight:
+                    active ? FontWeight.w600 : FontWeight.w400)),
       ),
     );
   }
