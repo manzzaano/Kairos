@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../tasks/presentation/bloc/task_bloc.dart';
@@ -60,7 +61,10 @@ class _FocusPageState extends State<FocusPage> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton.icon(
-                    onPressed: () => context.push('/focus/timer'),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/focus/timer');
+                    },
                     icon: const Icon(Icons.play_arrow,
                         color: Color(0xFF1A0A00), size: 18),
                     label: Text('Empezar sesión libre',
@@ -130,53 +134,93 @@ class _FocusPageState extends State<FocusPage> {
   }
 }
 
-class _FocusTaskCard extends StatelessWidget {
+class _FocusTaskCard extends StatefulWidget {
   final Task task;
   const _FocusTaskCard({required this.task});
+
+  @override
+  State<_FocusTaskCard> createState() => _FocusTaskCardState();
+}
+
+class _FocusTaskCardState extends State<_FocusTaskCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 70),
+      reverseDuration: const Duration(milliseconds: 220),
+      lowerBound: 0,
+      upperBound: 1,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
     return GestureDetector(
-      onTap: () => context.push('/focus/timer?taskId=${task.id}'),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: kc.bg2,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kc.line),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: kc.bg3,
-                borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push('/focus/timer?taskId=${widget.task.id}');
+      },
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) => _ctrl.reverse(),
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: kc.bg2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: kc.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: kc.bg3,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.timer_outlined, color: kc.text3, size: 16),
               ),
-              child: Icon(Icons.timer_outlined, color: kc.text3, size: 16),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(task.title,
-                      style: AppTypography.body13
-                          .copyWith(fontWeight: FontWeight.w500),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('${task.estimateMinutes}min · E${task.energyLevel}',
-                      style: AppTypography.mono11
-                          .copyWith(color: kc.text3)),
-                ],
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.task.title,
+                        style: AppTypography.body13
+                            .copyWith(fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(
+                        '${widget.task.estimateMinutes}min · E${widget.task.energyLevel}',
+                        style: AppTypography.mono11
+                            .copyWith(color: kc.text3)),
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right, color: kc.text3, size: 16),
-          ],
+              Icon(Icons.chevron_right, color: kc.text3, size: 16),
+            ],
+          ),
         ),
       ),
     );
