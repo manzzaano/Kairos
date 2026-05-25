@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/kairos_colors.dart';
+import '../../../../core/theme/kairos_logo.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/constants/app_shapes.dart';
 
@@ -27,7 +28,6 @@ class _OnboardingPageState extends State<OnboardingPage>
       title: 'Tu agenda,\nsiempre disponible',
       sub: 'Trabaja sin conexión. Tus tareas se sincronizan automáticamente en segundo plano.',
       accent: Color(0xFF4ADE80),
-      icon: Icons.wifi_off_rounded,
       illustration: _IllustrationType.offline,
     ),
     _SlideData(
@@ -35,7 +35,6 @@ class _OnboardingPageState extends State<OnboardingPage>
       title: 'Optimiza tu día\ncon un toque',
       sub: 'La IA de KAIROS analiza tus tareas y sugiere el orden óptimo para maximizar tu energía.',
       accent: Color(0xFFFB923C),
-      icon: Icons.auto_awesome_rounded,
       illustration: _IllustrationType.ai,
     ),
     _SlideData(
@@ -43,7 +42,6 @@ class _OnboardingPageState extends State<OnboardingPage>
       title: 'Modo enfoque\nsin distracciones',
       sub: 'Temporizador Pomodoro integrado. Bloquea distracciones y gana XP por cada sesión.',
       accent: Color(0xFFA855F7),
-      icon: Icons.timer_rounded,
       illustration: _IllustrationType.focus,
     ),
   ];
@@ -354,10 +352,10 @@ class _OnboardingIllustrationState extends State<_OnboardingIllustration>
                     ),
                   ],
                 ),
-                child: Icon(
-                  widget.slide.icon,
+                child: KairosLogoMark(
+                  size: 40,
                   color: widget.slide.accent,
-                  size: 32,
+                  strokeWidth: 1.8,
                 ),
               ),
             ),
@@ -440,7 +438,6 @@ class _SlideData {
   final String title;
   final String sub;
   final Color accent;
-  final IconData icon;
   final _IllustrationType illustration;
 
   const _SlideData({
@@ -448,7 +445,6 @@ class _SlideData {
     required this.title,
     required this.sub,
     required this.accent,
-    required this.icon,
     required this.illustration,
   });
 }
