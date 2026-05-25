@@ -763,19 +763,17 @@ class _AiCtaState extends State<_AiCta> with SingleTickerProviderStateMixin {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFFFB923C).withValues(alpha: 0.14 + g * 0.06),
-                  const Color(0xFFFB923C).withValues(alpha: 0.05),
+                  kc.accent.withValues(alpha: 0.14 + g * 0.06),
+                  kc.accent.withValues(alpha: 0.05),
                 ],
               ),
               border: Border.all(
-                color: const Color(0xFFFB923C)
-                    .withValues(alpha: 0.35 + g * 0.25),
+                color: kc.accent.withValues(alpha: 0.35 + g * 0.25),
                 width: 1.0 + g * 0.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFB923C)
-                      .withValues(alpha: 0.08 + g * 0.08),
+                  color: kc.accent.withValues(alpha: 0.08 + g * 0.08),
                   blurRadius: 20,
                   spreadRadius: g * 2,
                 ),
@@ -789,15 +787,14 @@ class _AiCtaState extends State<_AiCta> with SingleTickerProviderStateMixin {
                   height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFFFB923C), Color(0xFFE57C2E)],
+                      colors: [kc.accent, kc.accent.withValues(alpha: 0.75)],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFB923C)
-                            .withValues(alpha: 0.35 + g * 0.2),
+                        color: kc.accent.withValues(alpha: 0.35 + g * 0.2),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -814,7 +811,7 @@ class _AiCtaState extends State<_AiCta> with SingleTickerProviderStateMixin {
                       Text('Optimizar mi día con IA',
                           style: AppTypography.body14.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFFFB923C))),
+                              color: kc.accent)),
                       const SizedBox(height: 2),
                       Text('Reordena por prioridad y energía',
                           style: AppTypography.caption12
@@ -823,7 +820,7 @@ class _AiCtaState extends State<_AiCta> with SingleTickerProviderStateMixin {
                   ),
                 ),
                 Icon(Icons.arrow_forward_ios,
-                    color: const Color(0xFFFB923C).withValues(alpha: 0.7),
+                    color: kc.accent.withValues(alpha: 0.7),
                     size: 14),
               ],
             ),
