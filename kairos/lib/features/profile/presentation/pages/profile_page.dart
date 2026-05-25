@@ -21,10 +21,80 @@ import '../../../tasks/domain/entities/task.dart';
 import '../../../tasks/presentation/bloc/task_bloc.dart';
 import '../../../tasks/presentation/bloc/task_state.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  String _initials(String? email) {
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String _displayName = '';
+  static const _nameKey = 'kairos_display_name';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _displayName = prefs.getString(_nameKey) ?? '');
+  }
+
+  Future<void> _editName(BuildContext ctx) async {
+    final kc = ctx.kc;
+    final ctrl = TextEditingController(text: _displayName);
+    final name = await showDialog<String>(
+      context: ctx,
+      builder: (dCtx) => AlertDialog(
+        backgroundColor: kc.bg2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Tu nombre', style: AppTypography.heading18),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: AppTypography.body14,
+          decoration: InputDecoration(
+            hintText: 'Cómo te llamas',
+            hintStyle: AppTypography.body14.copyWith(color: kc.text3),
+            filled: true,
+            fillColor: kc.bg3,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          onSubmitted: (v) => Navigator.of(dCtx).pop(v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dCtx).pop(),
+            child: Text('Cancelar', style: AppTypography.body13.copyWith(color: kc.text2)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dCtx).pop(ctrl.text.trim()),
+            child: Text('Guardar', style: AppTypography.body13.copyWith(
+                color: kc.accent, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (name != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_nameKey, name);
+      setState(() => _displayName = name);
+    }
+  }
+
+  String _initials(String? displayName, String? email) {
+    if (displayName != null && displayName.isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      return displayName.substring(0, displayName.length >= 2 ? 2 : 1).toUpperCase();
+    }
     if (email == null || email.isEmpty) return '?';
     final parts = email.split('@').first.split('.');
     if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
@@ -53,6 +123,7 @@ class ProfilePage extends StatelessWidget {
     final user = Supabase.instance.client.auth.currentUser;
     final userEmail = user?.email;
     final isGuest = user == null;
+    final hasName = _displayName.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -142,7 +213,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          isGuest ? '?' : _initials(userEmail),
+                          isGuest ? '?' : _initials(_displayName, userEmail),
                           style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -156,12 +227,36 @@ class ProfilePage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          isGuest ? 'Modo invitado' : (userEmail ?? 'Usuario'),
-                          style: GoogleFonts.inter(
-                              fontSize: 15, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                isGuest
+                                    ? 'Modo invitado'
+                                    : (hasName ? _displayName : (userEmail ?? 'Usuario')),
+                                style: GoogleFonts.inter(
+                                    fontSize: 15, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!isGuest)
+                              GestureDetector(
+                                onTap: () => _editName(context),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.edit_outlined,
+                                      size: 15, color: kc.text3),
+                                ),
+                              ),
+                          ],
                         ),
+                        if (!isGuest && hasName) ...[
+                          const SizedBox(height: 1),
+                          Text(userEmail ?? '',
+                              style: AppTypography.mono11
+                                  .copyWith(color: kc.text3),
+                              overflow: TextOverflow.ellipsis),
+                        ],
                         const SizedBox(height: 4),
                         Row(
                           mainAxisSize: MainAxisSize.min,

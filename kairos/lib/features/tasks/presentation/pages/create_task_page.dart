@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -23,14 +24,37 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   int _energy = 3;
   String? _dueLabel = 'Hoy';
   String _project = 'Personal';
+  int _estimateMinutes = 25;
   bool _showTitleError = false;
   final List<String> _subtasks = [];
 
-  static const _energyLabels = [
-    '', 'Mínima', 'Ligera', 'Media', 'Alta', 'Extrema'
-  ];
+  // Proyectos cargados desde SharedPreferences
+  List<String> _projects = [];
+
+  static const _projectsKey = 'kairos_projects_v1';
+  static const _energyLabels = ['', 'Mínima', 'Ligera', 'Media', 'Alta', 'Extrema'];
   static const _dueDates = ['Hoy', 'Mañana', 'Esta semana', 'Sin fecha'];
-  static const _projects = ['Personal', 'KAIROS', 'Académico', 'Code Review'];
+  static const _minuteOptions = [15, 25, 30, 45, 60, 90, 120];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_projectsKey);
+    setState(() {
+      _projects = saved ?? ['Personal'];
+      if (!_projects.contains(_project)) _project = _projects.first;
+    });
+  }
+
+  Future<void> _saveProjects() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_projectsKey, _projects);
+  }
 
   @override
   void dispose() {
@@ -55,6 +79,89 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     setState(() => _subtasks.removeAt(index));
   }
 
+  Future<void> _addProject() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final kc = ctx.kc;
+        return AlertDialog(
+          backgroundColor: kc.bg2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Nuevo proyecto', style: AppTypography.heading18),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            style: AppTypography.body14,
+            decoration: InputDecoration(
+              hintText: 'Nombre del proyecto',
+              hintStyle: AppTypography.body14.copyWith(color: kc.text3),
+              filled: true,
+              fillColor: kc.bg3,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('Cancelar', style: AppTypography.body13.copyWith(color: kc.text2)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+              child: Text('Añadir', style: AppTypography.body13.copyWith(
+                  color: kc.accent, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
+    if (name != null && name.isNotEmpty && !_projects.contains(name)) {
+      setState(() {
+        _projects.add(name);
+        _project = name;
+      });
+      await _saveProjects();
+    }
+  }
+
+  Future<void> _deleteProject(String p) async {
+    if (p == 'Personal' || _projects.length <= 1) return;
+    final kc = context.kc;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kc.bg2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Eliminar proyecto', style: AppTypography.heading18),
+        content: Text('¿Eliminar "$p"?',
+            style: AppTypography.body14.copyWith(color: kc.text2)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancelar', style: AppTypography.body13.copyWith(color: kc.text2)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Eliminar', style: AppTypography.body13.copyWith(
+                color: kc.danger, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      setState(() {
+        _projects.remove(p);
+        if (_project == p) _project = 'Personal';
+      });
+      await _saveProjects();
+    }
+  }
+
   void _save() {
     if (_titleCtrl.text.trim().isEmpty) {
       HapticFeedback.heavyImpact();
@@ -64,17 +171,18 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     HapticFeedback.mediumImpact();
     context.read<TaskBloc>().add(CreateTaskRequested(TaskParams(
       title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim().isEmpty
-          ? null
-          : _descCtrl.text.trim(),
+      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       priority: _priority,
       energyLevel: _energy,
       dueLabel: _dueLabel,
+      estimateMinutes: _estimateMinutes,
       project: _project,
       subtasks: List.from(_subtasks),
     )));
     context.pop();
   }
+
+  String _minuteLabel(int m) => m == 120 ? '2h' : '${m}min';
 
   @override
   Widget build(BuildContext context) {
@@ -115,8 +223,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               controller: _titleCtrl,
               autofocus: true,
               onChanged: (_) => setState(() => _showTitleError = false),
-              style: AppTypography.heading22
-                  .copyWith(fontWeight: FontWeight.w500),
+              style: AppTypography.heading22.copyWith(fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: '¿Qué tienes en mente?',
                 hintStyle: AppTypography.heading22.copyWith(
@@ -125,10 +232,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 8),
-                errorText:
-                    _showTitleError ? 'El título es obligatorio' : null,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                errorText: _showTitleError ? 'El título es obligatorio' : null,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -140,8 +245,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               style: AppTypography.body13,
               decoration: InputDecoration(
                 hintText: 'Descripción (opcional)',
-                hintStyle:
-                    AppTypography.body13.copyWith(color: kc.text3),
+                hintStyle: AppTypography.body13.copyWith(color: kc.text3),
                 filled: true,
                 fillColor: kc.bg2,
                 border: OutlineInputBorder(
@@ -157,8 +261,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
             // Prioridad
             Text('Prioridad',
-                style:
-                    AppTypography.caption12.copyWith(color: kc.text2)),
+                style: AppTypography.caption12.copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
             _PrioritySegment(
               value: _priority,
@@ -174,11 +277,9 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Energía requerida',
-                    style: AppTypography.caption12
-                        .copyWith(color: kc.text2)),
+                    style: AppTypography.caption12.copyWith(color: kc.text2)),
                 Text('E$_energy · ${_energyLabels[_energy]}',
-                    style:
-                        AppTypography.mono11.copyWith(color: kc.accent)),
+                    style: AppTypography.mono11.copyWith(color: kc.accent)),
               ],
             ),
             Slider(
@@ -192,66 +293,34 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             ),
             const SizedBox(height: AppSpacing.xxl),
 
-            // Fecha
-            Text('Fecha',
-                style:
-                    AppTypography.caption12.copyWith(color: kc.text2)),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: 8,
-              children: _dueDates.map((d) {
-                final selected =
-                    _dueLabel == (d == 'Sin fecha' ? null : d);
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() =>
-                        _dueLabel = d == 'Sin fecha' ? null : d);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: selected ? kc.accentSoft : kc.bg2,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: selected ? kc.accent : kc.line),
-                    ),
-                    child: Text(d,
-                        style: AppTypography.caption12.copyWith(
-                            color:
-                                selected ? kc.accent : kc.text2)),
-                  ),
-                );
-              }).toList(),
+            // Duración estimada
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Duración estimada',
+                    style: AppTypography.caption12.copyWith(color: kc.text2)),
+                Text('$_estimateMinutes min',
+                    style: AppTypography.mono11.copyWith(color: kc.accent)),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // Proyecto
-            Text('Proyecto',
-                style:
-                    AppTypography.caption12.copyWith(color: kc.text2)),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: 8,
-              runSpacing: 8,
-              children: _projects.map((p) {
-                final selected = _project == p;
+              children: _minuteOptions.map((m) {
+                final selected = _estimateMinutes == m;
                 return GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    setState(() => _project = p);
+                    setState(() => _estimateMinutes = m);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: selected ? kc.accentSoft : kc.bg2,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: selected ? kc.accent : kc.line),
+                      border: Border.all(color: selected ? kc.accent : kc.line),
                     ),
-                    child: Text(p,
+                    child: Text(_minuteLabel(m),
                         style: AppTypography.caption12.copyWith(
                             color: selected ? kc.accent : kc.text2)),
                   ),
@@ -260,22 +329,111 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             ),
             const SizedBox(height: AppSpacing.xxl),
 
+            // Fecha
+            Text('Fecha',
+                style: AppTypography.caption12.copyWith(color: kc.text2)),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: 8,
+              children: _dueDates.map((d) {
+                final selected = _dueLabel == (d == 'Sin fecha' ? null : d);
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _dueLabel = d == 'Sin fecha' ? null : d);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? kc.accentSoft : kc.bg2,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: selected ? kc.accent : kc.line),
+                    ),
+                    child: Text(d,
+                        style: AppTypography.caption12.copyWith(
+                            color: selected ? kc.accent : kc.text2)),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+
+            // Proyecto
+            Text('Proyecto',
+                style: AppTypography.caption12.copyWith(color: kc.text2)),
+            const SizedBox(height: AppSpacing.sm),
+            _projects.isEmpty
+                ? const SizedBox()
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ..._projects.map((p) {
+                        final selected = _project == p;
+                        return GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _project = p);
+                          },
+                          onLongPress: p != 'Personal'
+                              ? () => _deleteProject(p)
+                              : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: selected ? kc.accentSoft : kc.bg2,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: selected ? kc.accent : kc.line),
+                            ),
+                            child: Text(p,
+                                style: AppTypography.caption12.copyWith(
+                                    color: selected ? kc.accent : kc.text2)),
+                          ),
+                        );
+                      }),
+                      // Botón añadir proyecto
+                      GestureDetector(
+                        onTap: _addProject,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: kc.bg2,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: kc.line, style: BorderStyle.solid),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add, size: 13, color: kc.text3),
+                              const SizedBox(width: 3),
+                              Text('Nuevo',
+                                  style: AppTypography.caption12
+                                      .copyWith(color: kc.text3)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: AppSpacing.xxl),
+
             // Subtareas
             Row(
               children: [
                 Text('Subtareas',
-                    style: AppTypography.caption12
-                        .copyWith(color: kc.text2)),
+                    style: AppTypography.caption12.copyWith(color: kc.text2)),
                 if (_subtasks.isNotEmpty) ...[
                   const SizedBox(width: 6),
                   Text('${_subtasks.length}',
-                      style: AppTypography.mono11
-                          .copyWith(color: kc.accent)),
+                      style: AppTypography.mono11.copyWith(color: kc.accent)),
                 ],
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            // Subtask list
             if (_subtasks.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -293,8 +451,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                               horizontal: 12, vertical: 10),
                           child: Row(
                             children: [
-                              Icon(Icons.drag_handle,
-                                  color: kc.text4, size: 16),
+                              Icon(Icons.drag_handle, color: kc.text4, size: 16),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(_subtasks[i],
@@ -302,8 +459,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                               ),
                               GestureDetector(
                                 onTap: () => _removeSubtask(i),
-                                child: Icon(Icons.close,
-                                    color: kc.text3, size: 16),
+                                child: Icon(Icons.close, color: kc.text3, size: 16),
                               ),
                             ],
                           ),
@@ -315,7 +471,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                   }),
                 ),
               ),
-            // Add subtask input
             Row(
               children: [
                 Expanded(
@@ -325,8 +480,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                     onSubmitted: (_) => _addSubtask(),
                     decoration: InputDecoration(
                       hintText: 'Añadir subtarea...',
-                      hintStyle: AppTypography.body13
-                          .copyWith(color: kc.text3),
+                      hintStyle:
+                          AppTypography.body13.copyWith(color: kc.text3),
                       filled: true,
                       fillColor: kc.bg2,
                       border: OutlineInputBorder(
@@ -350,8 +505,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                       color: kc.accent,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.add,
-                        color: Color(0xFF1A0A00), size: 20),
+                    child: const Icon(Icons.add, color: Color(0xFF1A0A00), size: 20),
                   ),
                 ),
               ],
@@ -361,18 +515,16 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                  color: kc.bg2,
-                  borderRadius: BorderRadius.circular(8)),
+                  color: kc.bg2, borderRadius: BorderRadius.circular(8)),
               child: Row(
                 children: [
-                  Icon(Icons.storage_outlined,
-                      color: kc.text3, size: 14),
+                  Icon(Icons.storage_outlined, color: kc.text3, size: 14),
                   const SizedBox(width: 8),
                   Expanded(
-                      child: Text(
-                          'Se guarda en local (Realm). Sin conexión requerida.',
-                          style: AppTypography.mono11
-                              .copyWith(color: kc.text3))),
+                    child: Text(
+                        'Se guarda en local (Realm). Sin conexión requerida.',
+                        style: AppTypography.mono11.copyWith(color: kc.text3)),
+                  ),
                 ],
               ),
             ),
@@ -384,16 +536,13 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 onPressed: canSave ? _save : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kc.accent,
-                  disabledBackgroundColor:
-                      kc.accent.withValues(alpha: 0.4),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.lg),
+                  disabledBackgroundColor: kc.accent.withValues(alpha: 0.4),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text('Guardar',
-                    style: AppTypography.body15
-                        .copyWith(color: kc.bg)),
+                    style: AppTypography.body15.copyWith(color: kc.bg)),
               ),
             ),
           ],
@@ -437,16 +586,12 @@ class _PrioritySegment extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 margin: const EdgeInsets.all(3),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? color.withValues(alpha: 0.15)
-                      : Colors.transparent,
+                  color: selected ? color.withValues(alpha: 0.15) : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: selected
-                      ? Border.all(
-                          color: color.withValues(alpha: 0.4))
+                      ? Border.all(color: color.withValues(alpha: 0.4))
                       : null,
                 ),
                 child: Row(
@@ -457,9 +602,7 @@ class _PrioritySegment extends StatelessWidget {
                       height: 7,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: selected
-                            ? color
-                            : color.withValues(alpha: 0.35),
+                        color: selected ? color : color.withValues(alpha: 0.35),
                       ),
                     ),
                     const SizedBox(width: 6),

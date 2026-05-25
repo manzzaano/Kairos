@@ -13,6 +13,7 @@ import '../../features/onboarding/presentation/pages/splash_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/onboarding/presentation/pages/login_page.dart';
 import '../../features/optimize/presentation/pages/optimize_page.dart';
+import '../../features/habits/presentation/pages/create_habit_page.dart';
 import '../../features/app/presentation/pages/app_shell.dart';
 
 /// Notifica al router cuando cambia el estado de auth de Supabase.
@@ -91,6 +92,16 @@ class AppRouter {
           transitionsBuilder: (_, animation, __, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 250),
+        ),
+      ),
+      GoRoute(
+        path: '/create-habit',
+        pageBuilder: (_, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CreateHabitPage(),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 200),
         ),
       ),
       StatefulShellRoute.indexedStack(
