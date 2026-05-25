@@ -15,6 +15,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../shared/widgets/task_card.dart';
 import '../../../../shared/widgets/fab_kairos.dart';
 import '../../../../core/utils/k_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -26,6 +27,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _orbitCtrl;
+  String _displayName = '';
+
+  static const _nameKey = 'kairos_display_name';
 
   @override
   void initState() {
@@ -35,6 +39,13 @@ class _DashboardPageState extends State<DashboardPage>
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString(_nameKey) ?? '';
+    if (mounted) setState(() => _displayName = name);
   }
 
   @override
@@ -44,8 +55,9 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   String _greeting() {
-    final email = Supabase.instance.client.auth.currentUser?.email;
     final name = () {
+      if (_displayName.isNotEmpty) return _displayName;
+      final email = Supabase.instance.client.auth.currentUser?.email;
       if (email == null) return 'Explorador';
       final local = email.split('@').first.split('.').first
           .replaceAll(RegExp(r'[0-9]'), '').trim();

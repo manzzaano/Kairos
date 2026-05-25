@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,8 +25,38 @@ class FocusTimerPage extends StatefulWidget {
 class _FocusTimerPageState extends State<FocusTimerPage>
     with TickerProviderStateMixin {
   Task? _task;
+  int _totalSeconds = FocusBloc.pomodoroSeconds;
   late final AnimationController _pulseCtrl;
   late final Animation<double> _pulseAnim;
+
+  // Audio
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  int _soundMode = 0; // 0=off, 1=white noise, 2=rain, 3=lofi
+  static const _soundAssets = [
+    '',
+    'assets/audio/white_noise.wav',
+    'assets/audio/rain.wav',
+    'assets/audio/lofi.wav',
+  ];
+  static const _soundIcons = [
+    Icons.volume_off_outlined,
+    Icons.waves_outlined,
+    Icons.water_drop_outlined,
+    Icons.music_note_outlined,
+  ];
+  static const _soundLabels = ['OFF', 'BLANCO', 'LLUVIA', 'LOFI'];
+
+  Future<void> _cycleSound() async {
+    HapticFeedback.selectionClick();
+    final next = (_soundMode + 1) % _soundAssets.length;
+    setState(() => _soundMode = next);
+    if (next == 0) {
+      await _audioPlayer.stop();
+    } else {
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _audioPlayer.play(AssetSource(_soundAssets[next]));
+    }
+  }
 
   @override
   void initState() {
@@ -42,12 +73,17 @@ class _FocusTimerPageState extends State<FocusTimerPage>
         _task = s.tasks.where((t) => t.id == widget.taskId).firstOrNull;
       }
     }
+    // Calcular duración real del temporizador
+    _totalSeconds = _task != null
+        ? _task!.estimateMinutes * 60
+        : FocusBloc.pomodoroSeconds;
     context.read<FocusBloc>().add(FocusStart(task: _task));
   }
 
   @override
   void dispose() {
     _pulseCtrl.dispose();
+    _audioPlayer.dispose();
     context.read<FocusBloc>().add(const FocusStop());
     super.dispose();
   }
@@ -73,7 +109,7 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                       ? 0
                       : FocusBloc.pomodoroSeconds;
 
-          final progress = 1.0 - (secondsLeft / FocusBloc.pomodoroSeconds);
+          final progress = 1.0 - (secondsLeft / _totalSeconds);
           final isRunning = state is FocusRunning;
           final isCompleted = state is FocusCompleted;
           final task = state is FocusRunning
@@ -235,6 +271,15 @@ class _FocusTimerPageState extends State<FocusTimerPage>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Botón sonido
+                    _SoundBtn(
+                      soundMode: _soundMode,
+                      icon: _soundIcons[_soundMode],
+                      label: _soundLabels[_soundMode],
+                      accent: kc.accent,
+                      onTap: _cycleSound,
+                    ),
+                    const SizedBox(width: AppSpacing.lg),
                     _ControlBtn(
                       size: 56,
                       borderRadius: 18,
@@ -451,6 +496,69 @@ class _ControlBtnState extends State<_ControlBtn>
           child: Icon(widget.icon,
               color: widget.fg, size: widget.size > 60 ? 32 : 22),
         ),
+      ),
+    );
+  }
+}
+
+/// Botón circular para ciclar modos de sonido (off / ruido blanco / lluvia / lofi).
+class _SoundBtn extends StatelessWidget {
+  final int soundMode;
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+  const _SoundBtn({
+    required this.soundMode,
+    required this.icon,
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final active = soundMode > 0;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: active
+                  ? accent.withValues(alpha: 0.15)
+                  : const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: active
+                    ? accent.withValues(alpha: 0.5)
+                    : const Color(0x26FFFFFF),
+              ),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Icon(icon,
+                color: active ? accent : const Color(0xFF888888), size: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                fontSize: 8,
+                fontFamily: 'JetBrains Mono',
+                color: active ? accent : const Color(0xFF555555),
+                letterSpacing: 0.5,
+              )),
+        ],
       ),
     );
   }

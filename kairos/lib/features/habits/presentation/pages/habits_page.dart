@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/habit.dart';
 import '../../../../core/theme/kairos_colors.dart';
@@ -21,10 +23,6 @@ class _HabitsPageState extends State<HabitsPage> {
 
   static const _prefsKey = 'kairos_habits_v1';
 
-  static const _emojiOptions = [
-    '💪', '📚', '🧘', '💧', '🏃', '🥗', '😴', '✍️',
-    '🎯', '🧠', '🎨', '🎸', '🌿', '🚴', '☀️', '🍎',
-  ];
 
   @override
   void initState() {
@@ -79,20 +77,14 @@ class _HabitsPageState extends State<HabitsPage> {
     await _save();
   }
 
-  void _showAddHabitSheet() {
+  Future<void> _openCreateHabitPage() async {
     HapticFeedback.lightImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddHabitSheet(
-        emojiOptions: _emojiOptions,
-        onAdd: (habit) async {
-          setState(() => _habits.add(habit));
-          await _save();
-        },
-      ),
-    );
+    final result = await context.push<Habit>('/create-habit');
+    // El hábito ya fue guardado en SharedPreferences por CreateHabitPage
+    // Solo recargamos la lista para reflejar el cambio
+    if (result != null && mounted) {
+      await _load();
+    }
   }
 
   @override
@@ -135,7 +127,7 @@ class _HabitsPageState extends State<HabitsPage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: _showAddHabitSheet,
+                    onTap: _openCreateHabitPage,
                     child: Container(
                       width: 40,
                       height: 40,
@@ -178,7 +170,7 @@ class _HabitsPageState extends State<HabitsPage> {
                       child: CircularProgressIndicator(
                           color: kc.accent))
                   : _habits.isEmpty
-                      ? _EmptyState(onAdd: _showAddHabitSheet)
+                      ? _EmptyState(onAdd: _openCreateHabitPage)
                       : ListView.builder(
                           padding: EdgeInsets.fromLTRB(
                               AppSpacing.xl, 0,
@@ -203,6 +195,12 @@ class _HabitCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
+  // Claves SVG válidas (mismo set que _HabitsPageState)
+  static const _knownIcons = {
+    'exercise', 'book', 'meditation', 'water', 'run', 'food',
+    'sleep', 'write', 'target', 'brain', 'art', 'music',
+    'nature', 'bike', 'sun', 'health',
+  };
   const _HabitCard({
     required this.habit,
     required this.onToggle,
@@ -250,9 +248,20 @@ class _HabitCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Emoji
-              Text(habit.emoji,
-                  style: const TextStyle(fontSize: 28)),
+              // Ícono SVG (o fallback si datos legacy con emoji)
+              _knownIcons.contains(habit.emoji)
+                  ? SvgPicture.asset(
+                      'assets/icons/habits/${habit.emoji}.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        done ? kc.accent : kc.text2,
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  : Icon(Icons.star_outline,
+                      size: 28,
+                      color: done ? kc.accent : kc.text2),
               const SizedBox(width: 14),
               // Info
               Expanded(
@@ -337,7 +346,12 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('🌱', style: TextStyle(fontSize: 56)),
+          SvgPicture.asset(
+            'assets/icons/habits/nature.svg',
+            width: 56,
+            height: 56,
+            colorFilter: ColorFilter.mode(kc.text3, BlendMode.srcIn),
+          ),
           const SizedBox(height: 16),
           Text('Sin hábitos todavía',
               style: AppTypography.body14
@@ -368,247 +382,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _AddHabitSheet extends StatefulWidget {
-  final List<String> emojiOptions;
-  final Future<void> Function(Habit) onAdd;
-  const _AddHabitSheet(
-      {required this.emojiOptions, required this.onAdd});
-
-  @override
-  State<_AddHabitSheet> createState() => _AddHabitSheetState();
-}
-
-class _AddHabitSheetState extends State<_AddHabitSheet> {
-  final _ctrl = TextEditingController();
-  String _emoji = '💪';
-  HabitFrequency _freq = HabitFrequency.daily;
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_ctrl.text.trim().isEmpty) return;
-    setState(() => _saving = true);
-    final habit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _ctrl.text.trim(),
-      emoji: _emoji,
-      frequency: _freq,
-    );
-    await widget.onAdd(habit);
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final kc = context.kc;
-    return Padding(
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: kc.bg2,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: kc.line2,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Text('Nuevo hábito',
-                    style: AppTypography.heading18),
-              ),
-              const SizedBox(height: 16),
-
-              // Emoji picker
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
-                child: Text('Icono',
-                    style: AppTypography.caption12
-                        .copyWith(color: kc.text2)),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 48,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20),
-                  itemCount: widget.emojiOptions.length,
-                  itemBuilder: (_, i) {
-                    final e = widget.emojiOptions[i];
-                    final selected = _emoji == e;
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _emoji = e);
-                      },
-                      child: AnimatedContainer(
-                        duration:
-                            const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.only(right: 8),
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? kc.accent.withValues(alpha: 0.15)
-                              : kc.bg3,
-                          borderRadius:
-                              BorderRadius.circular(10),
-                          border: selected
-                              ? Border.all(
-                                  color: kc.accent
-                                      .withValues(alpha: 0.5))
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(e,
-                              style:
-                                  const TextStyle(fontSize: 22)),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Title
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
-                child: TextField(
-                  controller: _ctrl,
-                  autofocus: true,
-                  style: AppTypography.body14,
-                  decoration: InputDecoration(
-                    hintText: 'Nombre del hábito...',
-                    hintStyle: AppTypography.body14
-                        .copyWith(color: kc.text3),
-                    filled: true,
-                    fillColor: kc.bg3,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Frequency
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
-                child: Text('Frecuencia',
-                    style: AppTypography.caption12
-                        .copyWith(color: kc.text2)),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: HabitFrequency.values.map((f) {
-                    final label = f == HabitFrequency.daily
-                        ? 'Diario'
-                        : f == HabitFrequency.weekdays
-                            ? 'L–V'
-                            : 'Semanal';
-                    final sel = _freq == f;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _freq = f);
-                        },
-                        child: AnimatedContainer(
-                          duration:
-                              const Duration(milliseconds: 150),
-                          margin: EdgeInsets.only(
-                              right: f != HabitFrequency.weekly
-                                  ? 8
-                                  : 0),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10),
-                          decoration: BoxDecoration(
-                            color: sel
-                                ? kc.accent.withValues(alpha: 0.15)
-                                : kc.bg3,
-                            borderRadius:
-                                BorderRadius.circular(10),
-                            border: sel
-                                ? Border.all(
-                                    color: kc.accent
-                                        .withValues(alpha: 0.5))
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(label,
-                                style:
-                                    AppTypography.caption12.copyWith(
-                                  color: sel ? kc.accent : kc.text2,
-                                  fontWeight: sel
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                )),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // CTA
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _saving ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kc.accent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: Text('Añadir hábito',
-                        style: AppTypography.body14.copyWith(
-                            color: const Color(0xFF1A0A00),
-                            fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

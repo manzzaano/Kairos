@@ -19,7 +19,10 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
   void _onStart(FocusStart event, Emitter<FocusState> emit) {
     _currentRound = 1;
     _startTimer();
-    emit(FocusRunning(secondsLeft: pomodoroSeconds, task: event.task, round: _currentRound));
+    final seconds = event.task != null
+        ? event.task!.estimateMinutes * 60
+        : pomodoroSeconds;
+    emit(FocusRunning(secondsLeft: seconds, task: event.task, round: _currentRound));
   }
 
   void _onTogglePause(FocusTogglePause event, Emitter<FocusState> emit) {
@@ -42,7 +45,8 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     final task = current is FocusRunning ? current.task
         : current is FocusPaused ? current.task : null;
     _startTimer();
-    emit(FocusRunning(secondsLeft: pomodoroSeconds, task: task, round: round));
+    final seconds = task != null ? task.estimateMinutes * 60 : pomodoroSeconds;
+    emit(FocusRunning(secondsLeft: seconds, task: task, round: round));
   }
 
   void _onStop(FocusStop event, Emitter<FocusState> emit) {
