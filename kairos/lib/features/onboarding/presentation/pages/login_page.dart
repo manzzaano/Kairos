@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -62,14 +63,17 @@ class _LoginPageState extends State<LoginPage> {
     if (msg.contains('email not confirmed')) {
       return 'Confirma tu correo antes de iniciar sesión';
     }
-    if (msg.contains('network') || msg.contains('socket') || msg.contains('connection')) {
-      return 'Sin conexión. Comprueba tu red e inténtalo de nuevo';
-    }
     if (msg.contains('rate limit') || msg.contains('too many')) {
       return 'Demasiados intentos. Espera unos minutos';
     }
     if (msg.contains('weak_password') || msg.contains('password')) {
       return 'La contraseña debe tener al menos 6 caracteres';
+    }
+    // Red disponible pero Supabase no responde → proyecto pausado / mantenimiento
+    if (msg.contains('network') || msg.contains('socket') ||
+        msg.contains('connection') || msg.contains('failed host') ||
+        msg.contains('timeout') || msg.contains('errno')) {
+      return 'El servidor no está disponible. Si el problema persiste, verifica el estado del proyecto en supabase.com/dashboard';
     }
     return 'Error al conectar. Inténtalo de nuevo';
   }
@@ -77,6 +81,21 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
+
+    // Pre-flight: comprobar conectividad antes de llamar a Supabase
+    final connectivity = await Connectivity().checkConnectivity();
+    final isOffline = connectivity.isEmpty ||
+        connectivity.every((r) => r == ConnectivityResult.none);
+    if (isOffline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Sin conexión de red. Activa WiFi o datos móviles.'),
+          backgroundColor: Theme.of(context).extension<KairosColors>()?.danger,
+        ));
+      }
+      setState(() => _loading = false);
+      return;
+    }
 
     try {
       final supabase = Supabase.instance.client;
@@ -93,6 +112,7 @@ class _LoginPageState extends State<LoginPage> {
       }
       if (mounted) context.go('/dashboard');
     } catch (e) {
+      debugPrint('[Auth error]: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
