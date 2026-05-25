@@ -337,23 +337,17 @@ class _OnboardingIllustrationState extends State<_OnboardingIllustration>
             ),
             child: Center(
               child: Container(
-                width: 72,
-                height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.slide.accent.withValues(alpha: 0.15 + g * 0.05),
-                  border: Border.all(
-                      color: widget.slide.accent.withValues(alpha: 0.4 + g * 0.2),
-                      width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.slide.accent.withValues(alpha: 0.20 + g * 0.15),
-                      blurRadius: 20 + g * 10,
+                      color: widget.slide.accent.withValues(alpha: 0.25 + g * 0.20),
+                      blurRadius: 24 + g * 12,
                     ),
                   ],
                 ),
                 child: KairosLogoMark(
-                  size: 40,
+                  size: 72,
                   color: widget.slide.accent,
                   strokeWidth: 1.8,
                 ),
