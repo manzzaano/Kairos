@@ -26,8 +26,7 @@ Caso de estudio: [leosoftware.dev/sistemas/kairos](https://leosoftware.dev/siste
 ```
 KAIROS/
 ├── kairos/      la app Flutter (lib/core, lib/features, lib/shared, test/)
-├── supabase/    migraciones y Edge Functions (optimize-tasks, debt-reflection)
-└── entregas/    material de las entregas del proyecto
+└── supabase/    migraciones y Edge Functions (optimize-tasks, debt-reflection)
 ```
 
 La función `debt-reflection` y la tabla de deuda de tiempo están preparadas en Supabase para la "deuda productiva" de la primera versión; la app actual no las usa.
